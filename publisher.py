@@ -34,20 +34,19 @@ def connect_mqtt() -> mqtt_client:
 
 
 def publish(client):
-    msg_count = 1
+    temperature = 25                                          # Generate fake temperature data with a starting value of 25°C
+    
     while True:
-        time.sleep(1)
-        msg = f"messages: {msg_count}"
+        msg = f"Temperature: {temperature}°C"      # Generate fake temperature data
         result = client.publish(topic, msg)
-        # result: [0, 1]
+        
+        # Check if message was successfully sent
         status = result[0]
-        if status == 0:
-            print(f"Send `{msg}` to topic `{topic}`")
-        else:
-            print(f"Failed to send message to topic {topic}")
-        msg_count += 1
-        if msg_count > 5:
-            break
+        print(f"Send `{msg}` to topic `{topic}`") if status == 0 else print(f"Failed to send message to topic {topic}")
+
+        temperature += random.randint(-2, 2)                  # Create variation in temperature reading
+        time.sleep(1)                                         # Wait 1 second, so we don't spam the broker
+
 
 
 def main():
