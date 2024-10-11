@@ -1,7 +1,9 @@
 from paho.mqtt import client as mqtt_client
+from dotenv import load_dotenv
 import os
 import random
 
+load_dotenv()
 
 # This code uses the Paho MQTT Python Client library
 # References: https://www.emqx.com/en/blog/how-to-use-mqtt-in-python
