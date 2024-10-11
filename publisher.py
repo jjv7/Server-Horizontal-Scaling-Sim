@@ -14,21 +14,19 @@ load_dotenv()
 broker = os.getenv('BROKER')
 port = 1883
 topic = "<104547242>/temperature"
-client_id = f'python-mqtt-{random.randint(0, 1000)}'
+client_id = f'temperature-sensor-{random.randint(0, 1000)}'
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
 
-def connect_mqtt():
+def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc, properties):
-        if rc == 0:
-            print("Connected to MQTT Broker!")
-        else:
-            print("Failed to connect, return code %d\n", rc)
+        # Response code is 0 for a successful connection
+        print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code %d\n", rc)
+            
     
-    # Set Connecting Client ID
+    # Connect client object to MQTT broker
     client = mqtt_client.Client(client_id=client_id, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
-
     client.username_pw_set(username, password)
     client.on_connect = on_connect
     client.connect(broker, port)
