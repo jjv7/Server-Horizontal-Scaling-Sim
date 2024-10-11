@@ -38,7 +38,7 @@ def subscribe(client: mqtt_client) -> None:
         print("\n########################################")
         print(f"Topic: {msg.topic}")
         print(f"QoS: {msg.qos}")
-        print(f"Retain: {msg.retain}")
+        print(f"Retained?: {msg.retain}")
         print(f"\nMessage:\n{msg.payload.decode()}")
         print("########################################")
 
