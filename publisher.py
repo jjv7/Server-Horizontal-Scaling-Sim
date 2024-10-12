@@ -20,7 +20,7 @@ username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
 
-def connect_mqtt() -> mqtt_client:
+def connect_mqtt():
     def on_connect(client, userdata, flags, rc, properties):
         # Response code is 0 for a successful connection
         print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code %d\n", rc)
