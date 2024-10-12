@@ -24,7 +24,7 @@ password = os.getenv('MQTT_PASSWORD')
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc, properties):
         # Response code is 0 for a successful connection
-        print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code %d\n", rc)
+        print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code {rc}\n")
             
     
     # Connect client object to MQTT broker
@@ -33,6 +33,14 @@ def connect_mqtt():
     client.on_connect = on_connect
     client.connect(broker, port)
     return client
+
+
+def disconnect_mqtt(client: mqtt_client):
+    def on_disconnect(client, userdata, flags, rc, properties):
+        print("Successfully disconnected from MQTT Broker") if rc == 0 else print(f"Disconnected with an error. Reason code: {rc}\n")
+
+    client.on_disconnect = on_disconnect
+    client.disconnect()
 
 
 def subscribe(client: mqtt_client):
@@ -54,7 +62,11 @@ def subscribe(client: mqtt_client):
 def main():
     client = connect_mqtt()
     subscribe(client)
-    client.loop_forever()
+    try:
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
+        disconnect_mqtt(client)
 
 
 if __name__ == "__main__":
