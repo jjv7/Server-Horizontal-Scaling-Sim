@@ -47,13 +47,13 @@ def subscribe(client: mqtt_client):
     # Print message and its details in specified format
     # I tried to create something similar to the MQTTX GUI client messages
     def on_message(client, userdata, msg):
-        print("\n========================================")
+        print("\n====================[SUB]====================")
         print(msg.topic)
         print(f"QoS: {msg.qos}")
         print(f"Retained?: {msg.retain}")
         print(f"\nMessage:")
         print(msg.payload.decode())
-        print("========================================")
+        print("====================[SUB]====================")
     
     client.subscribe(topics)
     client.on_message = on_message
