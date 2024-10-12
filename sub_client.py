@@ -62,6 +62,7 @@ def subscribe(client: mqtt_client):
 def main():
     client = connect_mqtt()
     subscribe(client)
+    
     try:
         client.loop_forever()
     except KeyboardInterrupt:
