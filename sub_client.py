@@ -53,7 +53,7 @@ def subscribe(client: mqtt_client):
         print(f"Retained?: {msg.retain}")
         print(f"\nMessage:")
         print(msg.payload.decode())
-        print("====================[SUB]====================")
+        print("=============================================")
     
     client.subscribe(topics)
     client.on_message = on_message
