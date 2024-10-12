@@ -21,10 +21,10 @@ username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
 
-def connect_mqtt() -> mqtt_client:
+def connect_mqtt():
     def on_connect(client, userdata, flags, rc, properties):
         # Response code is 0 for a successful connection
-        print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code %d\n", rc)
+        print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code {rc}\n")
             
     
     # Connect client object to MQTT broker
@@ -35,17 +35,25 @@ def connect_mqtt() -> mqtt_client:
     return client
 
 
-def subscribe(client: mqtt_client) -> None:
+def disconnect_mqtt(client: mqtt_client):
+    def on_disconnect(client, userdata, flags, rc, properties):
+        print("Successfully disconnected from MQTT Broker") if rc == 0 else print(f"Disconnected with an error. Reason code: {rc}\n")
+
+    client.on_disconnect = on_disconnect
+    client.disconnect()
+
+
+def subscribe(client: mqtt_client):
     # Print message and its details in specified format
     # I tried to create something similar to the MQTTX GUI client messages
     def on_message(client, userdata, msg):
-        print("\n========================================")
+        print("\n====================[SUB]====================")
         print(msg.topic)
         print(f"QoS: {msg.qos}")
         print(f"Retained?: {msg.retain}")
         print(f"\nMessage:")
         print(msg.payload.decode())
-        print("========================================")
+        print("=============================================")
     
     client.subscribe(topics)
     client.on_message = on_message
@@ -54,7 +62,12 @@ def subscribe(client: mqtt_client) -> None:
 def main():
     client = connect_mqtt()
     subscribe(client)
-    client.loop_forever()
+    
+    try:
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
+        disconnect_mqtt(client)
 
 
 if __name__ == "__main__":
