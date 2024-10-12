@@ -14,8 +14,9 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-topic = "<104547242>/temperature"                                       # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
-client_id = f'temperature-sensor-{random.randint(0, 1000)}'             # Assign a random ID to the client device
+publishTopic = "<104547242>/temperature"                                       # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
+subscribeTopics = [("<104547242>/temperature", 0), ("public/#", 0)]            # Pub and sub topics need to be separate, or public will be spammed as well
+client_id = f'temperature-sensor-{random.randint(0, 1000)}'                    # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
@@ -48,20 +49,38 @@ def publish(client):
     # Generate fake temperature data
     while True:
         msg = f"Temperature: {temperature}°C"
-        result = client.publish(topic, msg)
+        result = client.publish(publishTopic, msg)
         
         # Print message send status
         status = result[0]
-        print(f"Send `{msg}` to topic `{topic}`") if status == 0 else print(f"Failed to send message to topic {topic}")
+        print("\n====================[PUB]====================")
+        print(f"Send `{msg}` to topic `{publishTopic}`") if status == 0 else print(f"Failed to send message to topic {publishTopic}")
+        print("=============================================")
 
         temperature += random.randint(-4, 4)                  # Create variation in temperature reading
         time.sleep(1)                                         # Wait 1 second, so we don't spam the broker
+
+def subscribe(client: mqtt_client):
+    # Print message and its details in specified format
+    # I tried to create something similar to the MQTTX GUI client messages
+    def on_message(client, userdata, msg):
+        print("\n====================[SUB]====================")
+        print(msg.topic)
+        print(f"QoS: {msg.qos}")
+        print(f"Retained?: {msg.retain}")
+        print(f"\nMessage:")
+        print(msg.payload.decode())
+        print("=============================================")
+    
+    client.subscribe(subscribeTopics)
+    client.on_message = on_message
 
 
 
 def main():
     client = connect_mqtt()
     try:
+        subscribe(client)
         client.loop_start()
         publish(client)
     except KeyboardInterrupt:
