@@ -53,9 +53,10 @@ def publish(client):
         
         # Print message send status
         status = result[0]
-        print("\n====================[PUB]====================")
-        print(f"Send `{msg}` to topic `{publishTopic}`") if status == 0 else print(f"Failed to send message to topic {publishTopic}")
-        print("=============================================")
+        print("\n--------------------[PUB]--------------------")
+        print(publishTopic)
+        print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+        print("---------------------------------------------")
 
         temperature += random.randint(-4, 4)                  # Create variation in temperature reading
         time.sleep(1)                                         # Wait 1 second, so we don't spam the broker
@@ -79,6 +80,7 @@ def subscribe(client: mqtt_client):
 
 def main():
     client = connect_mqtt()
+
     try:
         subscribe(client)
         client.loop_start()
