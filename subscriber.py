@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 import os
 import random
 
+
+# The broker, username and password are stored in a .env file which needs to be made if not already included
 load_dotenv()
 
 # This code uses the Paho MQTT Python Client library
@@ -13,8 +15,8 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-topics = [("<104547242>/temperature", 0), ("public/#", 0)]
-client_id = f'client-device-{random.randint(0, 1000)}'
+topics = [("<104547242>/temperature", 0), ("public/#", 0)]              # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
+client_id = f'client-device-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
@@ -34,14 +36,17 @@ def connect_mqtt() -> mqtt_client:
 
 
 def subscribe(client: mqtt_client) -> None:
+    # Print message and its details in specified format
+    # I tried to create something similar to the MQTTX GUI client messages
     def on_message(client, userdata, msg):
-        print("\n########################################")
-        print(f"Topic: {msg.topic}")
+        print("\n========================================")
+        print(msg.topic)
         print(f"QoS: {msg.qos}")
         print(f"Retained?: {msg.retain}")
-        print(f"\nMessage:\n{msg.payload.decode()}")
-        print("########################################")
-
+        print(f"\nMessage:")
+        print(msg.payload.decode())
+        print("========================================")
+    
     client.subscribe(topics)
     client.on_message = on_message
 
