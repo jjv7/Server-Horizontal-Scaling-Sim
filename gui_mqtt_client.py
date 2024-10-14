@@ -5,42 +5,45 @@ import random
 
 # References: https://www.geeksforgeeks.org/python-gui-tkinter/
 
-def createTabs(window):
-    # Create tabs for different sections of client
-    tabBar = ttk.Notebook(window)
-    tabBar.pack(expand = True, fill = "both")
-    
-    connectionTab = ttk.Frame(tabBar)
-    subscriptionTab = ttk.Frame(tabBar)
-    messageTab = ttk.Frame(tabBar)
+# Make MqttClientGui a child of Tk
+class MqttClientGui(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        
+        # Initialise window
+        self.geometry("800x450")              # 16:9 aspect ratio
+        self.title("MQTT Python GUI Client")
+        self.resizable(False, False)          # Keep window size fixed, so I don't have to do reactive windows
 
-    tabBar.add(connectionTab, text = "Connection")
-    tabBar.add(subscriptionTab, text = "Subscriptions")
-    tabBar.add(messageTab, text = "Messages")
+        # Connection info. These will act essentially as global variables within the class
+        self.publishTopics = []
+        self.subscribeTopics = []
+        self.client = mqtt_client.Client(client_id=f'gui-mqtt-{random.randint(0, 1000)}', callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
+        self.connected = False
 
-
-
-def main():
-    # Initialise window
-    window = tk.Tk()
-    window.geometry("600x450")              # 16:9 aspect ratio
-    window.title("MQTT Python GUI Client")
-    # window.config(background = "#0a0a0a")
-
-    createTabs(window)
+        # Create tabs for different sections of the client
+        self.createTabs()
 
 
+    def createTabs(self):
+        # Create notebook container to hold tabs
+        tabBar = ttk.Notebook(self)
+        tabBar.pack(expand = True, fill = "both")
+        
+        # Create tabs
+        connectionTab = ttk.Frame(tabBar)
+        messageTab = ttk.Frame(tabBar)
 
-    # Connection status
-    #connectionStatusFrame = ttk.LabelFrame(window, text = "Connection status", padding = (10, 5))
+        # Add tabs to the notebook container
+        tabBar.add(connectionTab, text = "Connection")
+        tabBar.add(messageTab, text = "Messages")
 
-    # Connection info
-    #connectionInfoFrame = 
-    
+        self.initConnectionTab()
 
+    def initConnectionTab(self):
+        pass
 
-
-    window.mainloop()
 
 if __name__ == "__main__":
-    main()
+    window = MqttClientGui()
+    window.mainloop()
