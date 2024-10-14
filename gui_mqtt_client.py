@@ -5,14 +5,16 @@ from tkinter import ttk
 import os
 import random
 
+# References: https://www.geeksforgeeks.org/python-gui-tkinter/
+#             https://www.w3schools.com/python/python_classes.asp
+
+
 # Check if a .env file is present
 useEnvVariables = False
 if find_dotenv():
     useEnvVariables = True
     load_dotenv()
 
-# References: https://www.geeksforgeeks.org/python-gui-tkinter/
-#             https://www.w3schools.com/python/python_classes.asp
 
 # Make MqttClientGui a child of Tk
 class MqttClientGui(tk.Tk):
@@ -51,6 +53,7 @@ class MqttClientGui(tk.Tk):
         tabBar.add(messageTab, text = "Messages")
 
         self.initConnectionTab(connectionTab)
+        self.initMessageTab(messageTab)
 
 
     def initConnectionTab(self, connectionTab):
@@ -62,9 +65,9 @@ class MqttClientGui(tk.Tk):
         hostFrame.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
         
         hostLabel = ttk.Label(hostFrame, text="mqtt://")
-        hostLabel.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
+        hostLabel.grid(row=0, column=0, pady=(0, 7))
         
-        self.hostEntry = ttk.Entry(hostFrame)                               # Entries will require self, since we need to call them in another function later
+        self.hostEntry = ttk.Entry(hostFrame, width=23)                               # Entries will require self, since we need to call them in another function later
         self.hostEntry.grid(row=0, column=1, pady=(0, 7), sticky=tk.W)
 
 
@@ -72,16 +75,16 @@ class MqttClientGui(tk.Tk):
         portFrame = ttk.LabelFrame(connectionTab, text="Port", padding=(10, 10))
         portFrame.grid(row=2, column=0, padx=10, pady=10, sticky=tk.W)
         
-        self.portEntry = ttk.Entry(portFrame)
+        self.portEntry = ttk.Entry(portFrame, width=30)
         self.portEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
-        self.portEntry.insert(0, 1883)
+        self.portEntry.insert(0, 1883)                                      # Default MQTT port
 
 
         # Add in username field
         usernameFrame = ttk.LabelFrame(connectionTab, text="Username", padding=(10, 10))
         usernameFrame.grid(row=3, column=0, padx=10, pady=10, sticky=tk.W)
                 
-        self.usernameEntry = ttk.Entry(usernameFrame)
+        self.usernameEntry = ttk.Entry(usernameFrame, width=30)
         self.usernameEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
 
 
@@ -89,7 +92,7 @@ class MqttClientGui(tk.Tk):
         passwordFrame = ttk.LabelFrame(connectionTab, text="Password", padding=(10, 10))
         passwordFrame.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
                 
-        self.passwordEntry = ttk.Entry(passwordFrame, show="*")
+        self.passwordEntry = ttk.Entry(passwordFrame, width=30, show="*")
         self.passwordEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
 
 
@@ -98,6 +101,11 @@ class MqttClientGui(tk.Tk):
             self.hostEntry.insert(0, os.getenv('BROKER'))
             self.usernameEntry.insert(0, os.getenv('MQTT_USERNAME'))
             self.passwordEntry.insert(0, os.getenv('MQTT_PASSWORD'))
+
+
+    def initMessageTab(self, messageTab):
+        tabTitle = ttk.Label(messageTab, text="Messages", font="Calibri, 18 bold")
+        tabTitle.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
 
 
 
