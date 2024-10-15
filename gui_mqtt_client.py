@@ -155,7 +155,16 @@ class MqttClientGui(tk.Tk):
         messagesFrame = ttk.LabelFrame(messageTab, text="Received Messages", padding=(10,10))
         messagesFrame.grid(row=1, column=1, rowspan=2, padx=10, pady=10, sticky=tk.W)
 
-        self.messagesDisplay = tk.Listbox(messagesFrame, height=17, width=50)
+        self.messagesDisplay = tk.Text(
+            messagesFrame, 
+            height=20, 
+            width=43, 
+            font="Consolas, 9", 
+            background="black", 
+            foreground="white", 
+            insertbackground="white",
+            state=tk.DISABLED
+        )
         self.messagesDisplay.grid(row=0, column=0)
 
 
@@ -211,7 +220,6 @@ class MqttClientGui(tk.Tk):
         
         try:
             self.client.connect(broker, port)
-            print("connected")
             self.client.loop_start()
         except (TimeoutError, ConnectionRefusedError) as err:
             messagebox.showerror("Connection Error", f"Connection error: {err}")
@@ -242,15 +250,20 @@ class MqttClientGui(tk.Tk):
 
     def subscribe(self):
         def on_message(client, userdata, msg):
-            self.messagesDisplay.insert(tk.END, "=====================================")
+            self.messagesDisplay.config(state=tk.NORMAL)      # Enable text input
+
+            self.messagesDisplay.insert(tk.END, "=====================================\n")
             self.messagesDisplay.insert(tk.END, msg.topic)
-            self.messagesDisplay.insert(tk.END, f"QoS: {msg.qos}")
-            self.messagesDisplay.insert(tk.END, f"Retained?: {msg.retain}")
-            self.messagesDisplay.insert(tk.END, "")
-            self.messagesDisplay.insert(tk.END, f"Message:")
+            self.messagesDisplay.insert(tk.END, f"\nQoS: {msg.qos}")
+            self.messagesDisplay.insert(tk.END, f"\nRetained?: {msg.retain}")
+            self.messagesDisplay.insert(tk.END, f"\n\nMessage:\n")
             self.messagesDisplay.insert(tk.END, msg.payload.decode())
-            self.messagesDisplay.insert(tk.END, "=====================================")
-            self.messagesDisplay.insert(tk.END, "")
+            self.messagesDisplay.insert(tk.END, "\n=====================================\n")
+            
+            if self.messagesDisplay.yview()[1] <= 1.0 and self.messagesDisplay.yview()[1] >= 0.74:        # User is at the bottom
+                self.messagesDisplay.see(tk.END)              # Automatically scroll to the end
+
+            self.messagesDisplay.config(state=tk.DISABLED)    # Change to read-only
 
 
         if self.connected == False:
@@ -259,6 +272,7 @@ class MqttClientGui(tk.Tk):
             if not self.subTopicsEntry.get():
                 messagebox.showerror("Error", "Please input a topic to subscribe to")
             else:
+                self.subscribeTopics = []
                 for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:
                     self.subscribeTopics.append((topic, 0))                         # To subscribe to multiple topics, we need to also send the QoS (0)
                 
