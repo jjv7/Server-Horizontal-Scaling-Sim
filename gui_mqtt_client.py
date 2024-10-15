@@ -125,10 +125,10 @@ class MqttClientGui(tk.Tk):
         subTopicsLabel = ttk.Label(subFrame, text="Topics:")
         subTopicsLabel.grid(row=0, column=0, sticky=tk.W)
 
-        subTopicsEntry = ttk.Entry(subFrame)
-        subTopicsEntry.grid(row=0, column=1, padx=(22, 0), pady=10, sticky=tk.W)
+        self.subTopicsEntry = ttk.Entry(subFrame)
+        self.subTopicsEntry.grid(row=0, column=1, padx=(22, 0), pady=10, sticky=tk.W)
 
-        subButton = ttk.Button(subFrame, text="Subscribe")
+        subButton = ttk.Button(subFrame, text="Subscribe", command=self.subscribe)
         subButton.grid(row=1, column=0, columnspan=2, pady=10)
         
 
@@ -240,7 +240,32 @@ class MqttClientGui(tk.Tk):
                 
                 messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`") if status == 0 else messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
 
+    def subscribe(self):
+        def on_message(client, userdata, msg):
+            self.messagesDisplay.insert(tk.END, "=====================================")
+            self.messagesDisplay.insert(tk.END, msg.topic)
+            self.messagesDisplay.insert(tk.END, f"QoS: {msg.qos}")
+            self.messagesDisplay.insert(tk.END, f"Retained?: {msg.retain}")
+            self.messagesDisplay.insert(tk.END, "")
+            self.messagesDisplay.insert(tk.END, f"Message:")
+            self.messagesDisplay.insert(tk.END, msg.payload.decode())
+            self.messagesDisplay.insert(tk.END, "=====================================")
+            self.messagesDisplay.insert(tk.END, "")
 
+
+        if self.connected == False:
+            messagebox.showerror("Error", "Please connect to an MQTT broker first")
+        else:
+            if not self.subTopicsEntry.get():
+                messagebox.showerror("Error", "Please input a topic to subscribe to")
+            else:
+                for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:
+                    self.subscribeTopics.append((topic, 0))                         # To subscribe to multiple topics, we need to also send the QoS (0)
+                
+                self.client.subscribe(self.subscribeTopics)
+                self.client.on_message = on_message
+
+                messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
 
 
 
