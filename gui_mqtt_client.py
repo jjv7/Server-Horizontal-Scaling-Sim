@@ -139,16 +139,16 @@ class MqttClientGui(tk.Tk):
         pubTopicsLabel = ttk.Label(pubFrame, text="Topics:")
         pubTopicsLabel.grid(row=0, column=0, sticky=tk.W + tk.N)
 
-        pubTopicsEntry = ttk.Entry(pubFrame)
-        pubTopicsEntry.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky=tk.W)
+        self.pubTopicsEntry = ttk.Entry(pubFrame)
+        self.pubTopicsEntry.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky=tk.W)
 
         pubMessageLabel = ttk.Label(pubFrame, text="Message:")
         pubMessageLabel.grid(row=1, column=0, sticky=tk.W)
 
-        pubMessageEntry = ttk.Entry(pubFrame)
-        pubMessageEntry.grid(row=1, column=1, padx=(10, 0), pady=10, sticky=tk.W)
+        self.pubMessageEntry = ttk.Entry(pubFrame)
+        self.pubMessageEntry.grid(row=1, column=1, padx=(10, 0), pady=10, sticky=tk.W)
 
-        pubButton = ttk.Button(pubFrame, text="Publish")
+        pubButton = ttk.Button(pubFrame, text="Publish", command=self.publish)
         pubButton.grid(row=2, column=0, columnspan=2, pady=10)
 
         # Create messages section
@@ -205,15 +205,43 @@ class MqttClientGui(tk.Tk):
             return
 
         # Connect client object to MQTT broker
-        client = mqtt_client.Client(client_id=f'gui-mqtt-{random.randint(0, 1000)}', callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
-        client.username_pw_set(username, password)
-        client.on_connect = on_connect
+        self.client = mqtt_client.Client(client_id=f'gui-mqtt-{random.randint(0, 1000)}', callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
+        self.client.username_pw_set(username, password)
+        self.client.on_connect = on_connect
         
         try:
-            client.connect(broker, port)
+            self.client.connect(broker, port)
+            print("connected")
+            self.client.loop_start()
         except (TimeoutError, ConnectionRefusedError) as err:
             messagebox.showerror("Connection Error", f"Connection error: {err}")
             self.connected = False
+
+
+    def publish(self):        
+        if not self.connected:
+            messagebox.showerror("Error", "Please connect to an MQTT broker first")
+            return
+
+        self.publishTopics = [topic.strip() for topic in self.pubTopicsEntry.get().split(",")]            # Split CSVs into topics
+        
+        if len(self.publishTopics) == 0:
+            messagebox.showerror("Error", "Please input a topic to publish to")
+            return
+        
+        msg = self.pubMessageEntry.get()
+
+        if not msg:
+            messagebox.showerror("Error", "Please input a message to publish")
+        else:
+            for topic in self.publishTopics:
+                result = self.client.publish(topic, msg)
+                status = result[0]
+                
+                messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`") if status == 0 else messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
+
+
+
 
 
 if __name__ == "__main__":
