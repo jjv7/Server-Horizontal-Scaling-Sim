@@ -2,6 +2,7 @@ from paho.mqtt import client as mqtt_client
 from dotenv import load_dotenv, find_dotenv
 import tkinter as tk
 from tkinter import ttk, messagebox
+from socket import gaierror
 import os
 import random
 
@@ -176,11 +177,6 @@ class MqttClientGui(tk.Tk):
         self.messagesDisplay.config(state=tk.DISABLED)
 
 
-
-
-
-
-
     def connect_mqtt(self):
         def on_connect(client, userdata, flags, rc, properties):
             # No actual connection logic here
@@ -188,10 +184,11 @@ class MqttClientGui(tk.Tk):
             if rc == 0:
                 self.connected = True
                 messagebox.showinfo("Connection successful", "Connected to MQTT Broker!")
-                self.connStatLabel.config(text="Connected", font="Calibri, 11 bold", background="gray", foreground="green", width=30, anchor=tk.CENTER)
+                self.connStatLabel.config(text="Connected", foreground="green")
             else:
                 self.connected = False              # Ensure connected is False in case the first connection was successful
-                messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason code: {rc}\n")
+                messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason: {rc}\n")
+                self.connStatLabel.config(text="Not Connected", foreground="red")
 
         broker = self.hostEntry.get()
         port = self.portEntry.get()
@@ -234,7 +231,7 @@ class MqttClientGui(tk.Tk):
         try:
             self.client.connect(broker, port)
             self.client.loop_start()
-        except (TimeoutError, ConnectionRefusedError) as err:
+        except (TimeoutError, ConnectionRefusedError, gaierror) as err:
             messagebox.showerror("Connection Error", f"Connection error: {err}")
             self.connected = False
 
@@ -260,6 +257,7 @@ class MqttClientGui(tk.Tk):
                 status = result[0]
                 
                 messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`") if status == 0 else messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
+
 
     def subscribe(self):
         def on_message(client, userdata, msg):
