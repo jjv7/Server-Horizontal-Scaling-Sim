@@ -152,20 +152,33 @@ class MqttClientGui(tk.Tk):
         pubButton.grid(row=2, column=0, columnspan=2, pady=10)
 
         # Create messages section
-        messagesFrame = ttk.LabelFrame(messageTab, text="Received Messages", padding=(10,10))
-        messagesFrame.grid(row=1, column=1, rowspan=2, padx=10, pady=10, sticky=tk.W)
+        messagesFrame = ttk.LabelFrame(messageTab, text="Received Messages", padding=(0, 10))
+        messagesFrame.grid(row=1, column=1, rowspan=2, padx=(10, 0), pady=10, sticky=tk.W)
+
+
+        scrollbar = tk.Scrollbar(messagesFrame)
+        scrollbar.grid(row=0, column=1, sticky=tk.NSEW)
 
         self.messagesDisplay = tk.Text(
             messagesFrame, 
             height=20, 
-            width=43, 
+            width=42, 
             font="Consolas, 9", 
             background="black", 
             foreground="white", 
             insertbackground="white",
-            state=tk.DISABLED
+            yscrollcommand=scrollbar.set
         )
-        self.messagesDisplay.grid(row=0, column=0)
+
+        self.messagesDisplay.grid(row=0, column=0, padx=(10, 0))
+        self.messagesDisplay.insert(tk.END, "=====================================\n")
+        scrollbar.config(command=self.messagesDisplay.yview)
+        self.messagesDisplay.config(state=tk.DISABLED)
+
+
+
+
+
 
 
     def connect_mqtt(self):
@@ -252,16 +265,17 @@ class MqttClientGui(tk.Tk):
         def on_message(client, userdata, msg):
             self.messagesDisplay.config(state=tk.NORMAL)      # Enable text input
 
-            self.messagesDisplay.insert(tk.END, "=====================================\n")
-            self.messagesDisplay.insert(tk.END, msg.topic)
+            self.messagesDisplay.insert(tk.END, f"{msg.topic}")
             self.messagesDisplay.insert(tk.END, f"\nQoS: {msg.qos}")
             self.messagesDisplay.insert(tk.END, f"\nRetained?: {msg.retain}")
             self.messagesDisplay.insert(tk.END, f"\n\nMessage:\n")
             self.messagesDisplay.insert(tk.END, msg.payload.decode())
             self.messagesDisplay.insert(tk.END, "\n=====================================\n")
             
-            if self.messagesDisplay.yview()[1] <= 1.0 and self.messagesDisplay.yview()[1] >= 0.74:        # User is at the bottom
-                self.messagesDisplay.see(tk.END)              # Automatically scroll to the end
+            # This is for automatic scrolling of the textbox if the user is at the bottom
+            # Range is because the values for yview are inconsistent
+            if self.messagesDisplay.yview()[1] < 1.0 and self.messagesDisplay.yview()[1] >= 0.8:
+                self.messagesDisplay.yview(tk.END)
 
             self.messagesDisplay.config(state=tk.DISABLED)    # Change to read-only
 
