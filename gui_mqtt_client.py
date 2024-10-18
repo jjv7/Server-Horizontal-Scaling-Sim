@@ -189,6 +189,11 @@ class MqttClientGui(tk.Tk):
                 self.connected = False              # Ensure connected is False in case the first connection was successful
                 messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason: {rc}\n")
                 self.connStatLabel.config(text="Not Connected", foreground="red")
+        
+        if self.connected:
+            messagebox.showwarning("Connection active", "Please close the current connection before connecting again")
+            return
+
 
         broker = self.hostEntry.get()
         port = self.portEntry.get()
