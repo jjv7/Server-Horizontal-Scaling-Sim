@@ -15,7 +15,6 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-publishTopics = ["<104547242>/vcpus/avg_usage", "<104547242>/vcpus/active"]
 subscribeTopics = [("<104547242>/vcpus/commands", 0), ("public/#", 0)]            # Pub and sub topics need to be separate, or public will be spammed as well
 client_id = f'server-{random.randint(0, 1000)}'                                   # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
@@ -92,8 +91,37 @@ def pubVcpuActive(client):
         print("---------------------------------------------")
 
         # Active vCPUs should stay relatively consistent, so don't need to create variation here
+        # Instead provide a recommendation to scale in/out
 
         time.sleep(5)
+
+
+def handleScaleIn():
+    global avgVcpuUtil
+    global vcpuActive
+    if vcpuActive > 1:
+        oldVcpuActive = vcpuActive
+        vcpuActive -= 1
+
+        # Increase the average utilisation proportionally as fewer vCPUs handle the same workload
+        avgVcpuUtil = int(avgVcpuUtil * (oldVcpuActive / vcpuActive))
+        
+        # Make sure utilisation stays within bounds of 0-100%
+        avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
+
+
+def handleScaleOut():
+    global avgVcpuUtil
+    global vcpuActive
+    
+    oldVcpuActive = vcpuActive
+    vcpuActive += 1
+
+    # Decrease the average utilisation proportionally as more vCPUs handle the same workload
+    avgVcpuUtil = int(avgVcpuUtil * (oldVcpuActive / vcpuActive))
+    
+    # Make sure utilisation stays within bounds of 0-100%
+    avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
 
 
 def subscribe(client: mqtt_client):
@@ -107,6 +135,17 @@ def subscribe(client: mqtt_client):
         print(f"\nMessage:")
         print(msg.payload.decode())
         print("=============================================")
+
+        # Process command if from logger topic
+        if msg.topic == "<104547242>/vcpus/commands":
+            command = msg.payload.decode().strip()      # Remove all whitespace from command
+            
+            # Valid commands
+            match command:
+                case "!scalein":
+                    handleScaleIn()
+                case "!scaleout":
+                    handleScaleOut()
     
     client.subscribe(subscribeTopics)
     client.on_message = on_message
