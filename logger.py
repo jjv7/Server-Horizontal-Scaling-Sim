@@ -107,7 +107,7 @@ def subscribe(client: mqtt_client):
         print(f"\nMessage:")
         print(msg.payload.decode())
         print("=============================================")
-        
+
         # Process command if from logger topic
         if msg.topic == "<104547242>/logger":
             command = msg.payload.decode().strip()      # Remove all whitespace from command
@@ -119,8 +119,8 @@ def subscribe(client: mqtt_client):
                 case "!stoplog":
                     stopLogging()
         
-        # Log messages received if logging is active
-        if loggingActive:
+         # Log vCPU metrics if logging is active
+        if loggingActive and (msg.topic == "<104547242>/vcpus/avg_usage" or msg.topic == "<104547242>/vcpus/active"):
             logger.info("====================[SUB]====================")
             logger.info(msg.topic)
             logger.info(f"Retained?: {msg.retain}")
@@ -129,6 +129,7 @@ def subscribe(client: mqtt_client):
             logger.info(f"Message:")
             logger.info(msg.payload.decode())
             logger.info("=============================================")
+
 
     client.subscribe(topics)
     client.on_message = on_message
