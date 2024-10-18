@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import random
 import time
+import threading
 
 # The broker, username and password are stored in a .env file which needs to be made if not already included
 load_dotenv()
@@ -52,47 +53,47 @@ def pubAvgVcpuUse(client):
     global avgVcpuUtil
     topic = "<104547242>/vcpus/avg_usage"
 
-    # Pub msg to topic
-    msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
-    result = client.publish(topic, msg)
+    while True:
+        # Pub msg to topic
+        msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
+        result = client.publish(topic, msg)
 
-    # Print message send status to terminal
-    status = result[0]
-    print("\n--------------------[PUB]--------------------")
-    print(topic)
-    print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
-    print("---------------------------------------------")
-    
-    # Create variation in data
-    avgVcpuUtil += random.randint(-4, 4)
+        # Print message send status to terminal
+        status = result[0]
+        print("\n--------------------[PUB]--------------------")
+        print(topic)
+        print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+        print("---------------------------------------------")
+        
+        # Create variation in data
+        avgVcpuUtil += random.randint(-4, 4)
+
+        # Make sure utilisation stays within bounds of 0-100%
+        if avgVcpuUtil < 0: avgVcpuUtil = 0
+        if avgVcpuUtil > 100: avgVcpuUtil = 100
+
+        time.sleep(2)
 
 
 def pubVcpuActive(client):
     global vcpuActive
-
     topic = "<104547242>/vcpus/active"
 
-    # Pub msg to topic
-    msg = f"Active VCPUs: {vcpuActive}"
-    result = client.publish(topic, msg)
-
-    # Print message send status to terminal
-    status = result[0]
-    print("\n--------------------[PUB]--------------------")
-    print(topic)
-    print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
-    print("---------------------------------------------")
-    
-    # Create variation in data
-    # vcpuActive += random.randint(-4, 4)
-
-
-def publish(client):
-    # Generate data
     while True:
-        pubAvgVcpuUse(client)
-        pubVcpuActive(client)
-        time.sleep(1)                                         # Wait 1 second, so we don't spam the broker
+        # Pub msg to topic
+        msg = f"Active VCPUs: {vcpuActive}"
+        result = client.publish(topic, msg)
+
+        # Print message send status to terminal
+        status = result[0]
+        print("\n--------------------[PUB]--------------------")
+        print(topic)
+        print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+        print("---------------------------------------------")
+
+        # Active vCPUs should stay relatively consistent, so don't need to create variation here
+
+        time.sleep(5)
 
 
 def subscribe(client: mqtt_client):
@@ -116,13 +117,19 @@ def main():
     client = connect_mqtt()
     subscribe(client)
 
+    # Create threads for each publish function
+    avgVcpuUtilThread = threading.Thread(target = pubAvgVcpuUse, args = (client,))
+    vcpuActiveThread = threading.Thread(target = pubVcpuActive, args = (client,))
+
+    # Start threads
+    avgVcpuUtilThread.start()
+    vcpuActiveThread.start()
+
     try:
-        client.loop_start()
-        publish(client)
+        client.loop_forever()               # Blocking network loop function for MQTT client
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
         disconnect_mqtt(client)
-        client.loop_stop()
         print("Client disconnected, exiting program.")
 
 
