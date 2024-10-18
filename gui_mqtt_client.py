@@ -24,7 +24,7 @@ class MqttClientGui(tk.Tk):
         super().__init__()
         
         # Initialise window
-        self.geometry("585x450")              # 16:9 aspect ratio
+        self.geometry("585x450")
         self.title("MQTT Python GUI Client")
         self.resizable(False, False)          # Keep window size fixed, so I don't have to do reactive windows
 
@@ -96,15 +96,17 @@ class MqttClientGui(tk.Tk):
 
         # Add in connection status section
         connStatFrame = ttk.LabelFrame(connectionTab, text="Connection Status", padding=(10, 10))
-        connStatFrame.grid(row=2, column=1, padx=30, pady=10)
+        connStatFrame.grid(row=2, column=1, columnspan=2, padx=30, pady=10)
 
-        self.connStatLabel = ttk.Label(connStatFrame, text="Not Connected", font="Calibri, 11 bold", background="gray", foreground="red", width=30, anchor=tk.CENTER)
+        self.connStatLabel = ttk.Label(connStatFrame, text="Not Connected", font="Calibri, 11 bold", background="gray64", foreground="red", width=30, anchor=tk.CENTER)
         self.connStatLabel.grid(row=0, column=0, padx=5, pady=5)
 
         # Add connect button
         connButton = ttk.Button(connectionTab, text="Connect", command=self.connect_mqtt)
-        connButton.grid(row=3, column=1, pady=10, sticky=tk.N)
+        connButton.grid(row=3, column=1, padx=(0, 30), pady=10, sticky=tk.N + tk.E)
 
+        disconnButton = ttk.Button(connectionTab, text="Disconnect", command=self.disconnect_mqtt)
+        disconnButton.grid(row=3, column=2, pady=10, sticky=tk.N + tk.W)
 
 
         # Add in preset entries according to the .env file
@@ -177,6 +179,24 @@ class MqttClientGui(tk.Tk):
         self.messagesDisplay.config(state=tk.DISABLED)
 
 
+    def disconnect_mqtt(self):
+        def on_disconnect(client, userdata, flags, rc, properties):
+            # Show disconnection details
+            self.connected = False
+            if rc == 0:
+                messagebox.showinfo("Disconnection successful", "Successfully disconnected from MQTT Broker")
+            else:
+                messagebox.showerror("Disconnection with error", f"Disconnected with an error. Reason code: {rc}\n")
+            
+            self.connStatLabel.config(text="Not Connected", foreground="red")
+
+        self.client.on_disconnect = on_disconnect
+
+        # Only attempt disconnecting if client is connected
+        if self.connected:
+            self.client.disconnect()
+
+
     def connect_mqtt(self):
         def on_connect(client, userdata, flags, rc, properties):
             # No actual connection logic here
@@ -189,6 +209,7 @@ class MqttClientGui(tk.Tk):
                 self.connected = False              # Ensure connected is False in case the first connection was successful
                 messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason: {rc}\n")
                 self.connStatLabel.config(text="Not Connected", foreground="red")
+                self.client.loop_stop()             # If this is not here, with the wrong authentication details it will keep trying the connection
         
         if self.connected:
             messagebox.showwarning("Connection active", "Please close the current connection before connecting again")
@@ -283,23 +304,31 @@ class MqttClientGui(tk.Tk):
             self.messagesDisplay.config(state=tk.DISABLED)    # Change to read-only
 
 
-        if self.connected == False:
+        if not self.connected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
-        else:
-            if not self.subTopicsEntry.get():
-                messagebox.showerror("Error", "Please input a topic to subscribe to")
-            else:
-                self.subscribeTopics = []
-                for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:
-                    self.subscribeTopics.append((topic, 0))                         # To subscribe to multiple topics, we need to also send the QoS (0)
-                
-                self.client.subscribe(self.subscribeTopics)
-                self.client.on_message = on_message
+            return
+        
+        if not self.subTopicsEntry.get():
+            messagebox.showerror("Error", "Please input a topic to subscribe to")
+            return
+        
+        # Unsubscribe from existing topics
+        if self.subscribeTopics:
+            self.client.unsubscribe([topic[0] for topic in self.subscribeTopics])
 
-                messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
+        # Clear old subscriptions and add in new ones
+        self.subscribeTopics = []
+        for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:
+            self.subscribeTopics.append((topic, 0))                         # To subscribe to multiple topics, we need to also send the QoS (0)
+        
+        self.client.subscribe(self.subscribeTopics)
+        self.client.on_message = on_message
+
+        messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
 
 
 
 if __name__ == "__main__":
     window = MqttClientGui()
     window.mainloop()
+    window.client.loop_stop()
