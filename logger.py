@@ -119,7 +119,7 @@ def subscribe(client: mqtt_client):
                 case "!stoplog":
                     stopLogging()
         
-         # Log vCPU metrics if logging is active
+        # Log vCPU metrics if logging is active
         if loggingActive and (msg.topic == "<104547242>/vcpus/avg_usage" or msg.topic == "<104547242>/vcpus/active"):
             logger.info("====================[SUB]====================")
             logger.info(msg.topic)
