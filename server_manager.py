@@ -25,6 +25,9 @@ password = os.getenv('MQTT_PASSWORD')
 avgVcpuUtil = 10
 vcpuActive = 1
 
+# This is to kill the threads when a keyboard interrupt is used
+running = True
+
 
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc, properties):
@@ -48,11 +51,28 @@ def disconnect_mqtt(client: mqtt_client):
     client.disconnect()
 
 
-def pubAvgVcpuUse(client):
-    global avgVcpuUtil
-    topic = "<104547242>/vcpus/avg_usage"
+def pubWarning(client, msg):
+    # Pub msg to topic
+    topic = "<104547242>/vcpus/warning"
+    result = client.publish(topic, msg)
 
-    while True:
+    # Print message send status to terminal
+    status = result[0]
+    print("\n--------------------[PUB]--------------------")
+    print(topic)
+    print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+    print("---------------------------------------------")
+
+
+def pubAvgVcpuUse(client):
+    global running
+    global avgVcpuUtil
+    global vcpuActive
+    topic = "<104547242>/vcpus/avg_usage"
+    vcpuUtilLowCount = 0
+    vcpuUtilHighCount = 0
+
+    while running:
         # Pub msg to topic
         msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
         result = client.publish(topic, msg)
@@ -68,17 +88,36 @@ def pubAvgVcpuUse(client):
         avgVcpuUtil += random.randint(-4, 4)
 
         # Make sure utilisation stays within bounds of 0-100%
-        if avgVcpuUtil < 0: avgVcpuUtil = 0
-        if avgVcpuUtil > 100: avgVcpuUtil = 100
+        avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
+
+        # Check if vCPU usage is too low/high
+        if avgVcpuUtil < 20 and vcpuActive > 1:
+            vcpuUtilLowCount += 1
+        else:
+            vcpuUtilLowCount = 0
+  
+        if avgVcpuUtil > 80:
+            vcpuUtilHighCount += 1
+        else:
+            vcpuUtilHighCount = 0
+
+        # Provide a recommendation to scale in/out
+        # Scaling in too early can cause resources to become overloaded fast, hence it needs to trigger low more times
+        if vcpuUtilLowCount > 10 and vcpuActive > 1:
+            pubWarning(client, "Warning: CPU utilisation low")
+
+        if vcpuUtilHighCount > 5:
+            pubWarning(client, "Warning: CPU utilisation high")
 
         time.sleep(2)
 
 
 def pubVcpuActive(client):
+    global running
     global vcpuActive
     topic = "<104547242>/vcpus/active"
 
-    while True:
+    while running:
         # Pub msg to topic
         msg = f"Active VCPUs: {vcpuActive}"
         result = client.publish(topic, msg)
@@ -91,7 +130,6 @@ def pubVcpuActive(client):
         print("---------------------------------------------")
 
         # Active vCPUs should stay relatively consistent, so don't need to create variation here
-        # Instead provide a recommendation to scale in/out
 
         time.sleep(5)
 
@@ -153,6 +191,7 @@ def subscribe(client: mqtt_client):
 
 
 def main():
+    global running
     client = connect_mqtt()
     subscribe(client)
 
@@ -167,6 +206,7 @@ def main():
     try:
         client.loop_forever()               # Blocking network loop function for MQTT client
     except KeyboardInterrupt:
+        running = False
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
         disconnect_mqtt(client)
         print("Client disconnected, exiting program.")
