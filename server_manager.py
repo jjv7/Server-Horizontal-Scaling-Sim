@@ -14,11 +14,16 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-publishTopic = "<104547242>/temperature"                                       # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
-subscribeTopics = [("<104547242>/temperature", 0), ("public/#", 0)]            # Pub and sub topics need to be separate, or public will be spammed as well
-client_id = f'temperature-sensor-{random.randint(0, 1000)}'                    # Assign a random ID to the client device
+publishTopics = ["<104547242>/vcpus/avg_usage", "<104547242>/vcpus/active"]
+subscribeTopics = [("<104547242>/vcpus/commands", 0), ("public/#", 0)]            # Pub and sub topics need to be separate, or public will be spammed as well
+client_id = f'server-{random.randint(0, 1000)}'                                   # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
+
+
+# Global variables, so multiple functions can access this
+avgVcpuUtil = 10
+vcpuActive = 1
 
 
 def connect_mqtt():
@@ -43,23 +48,52 @@ def disconnect_mqtt(client: mqtt_client):
     client.disconnect()
 
 
-def publish(client):
-    temperature = 25                                          # Starting temperature value is room temperature (25°C)
-    
-    # Generate fake temperature data
-    while True:
-        msg = f"Temperature: {temperature}°C"
-        result = client.publish(publishTopic, msg)
-        
-        # Print message send status
-        status = result[0]
-        print("\n--------------------[PUB]--------------------")
-        print(publishTopic)
-        print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
-        print("---------------------------------------------")
+def pubAvgVcpuUse(client):
+    global avgVcpuUtil
+    topic = "<104547242>/vcpus/avg_usage"
 
-        temperature += random.randint(-4, 4)                  # Create variation in temperature reading
+    # Pub msg to topic
+    msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
+    result = client.publish(topic, msg)
+
+    # Print message send status to terminal
+    status = result[0]
+    print("\n--------------------[PUB]--------------------")
+    print(topic)
+    print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+    print("---------------------------------------------")
+    
+    # Create variation in data
+    avgVcpuUtil += random.randint(-4, 4)
+
+
+def pubVcpuActive(client):
+    global vcpuActive
+
+    topic = "<104547242>/vcpus/active"
+
+    # Pub msg to topic
+    msg = f"Active VCPUs: {vcpuActive}"
+    result = client.publish(topic, msg)
+
+    # Print message send status to terminal
+    status = result[0]
+    print("\n--------------------[PUB]--------------------")
+    print(topic)
+    print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+    print("---------------------------------------------")
+    
+    # Create variation in data
+    # vcpuActive += random.randint(-4, 4)
+
+
+def publish(client):
+    # Generate data
+    while True:
+        pubAvgVcpuUse(client)
+        pubVcpuActive(client)
         time.sleep(1)                                         # Wait 1 second, so we don't spam the broker
+
 
 def subscribe(client: mqtt_client):
     # Print message and its details in specified format
@@ -80,9 +114,9 @@ def subscribe(client: mqtt_client):
 
 def main():
     client = connect_mqtt()
+    subscribe(client)
 
     try:
-        subscribe(client)
         client.loop_start()
         publish(client)
     except KeyboardInterrupt:
