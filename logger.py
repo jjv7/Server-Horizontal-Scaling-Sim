@@ -17,7 +17,7 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-topics = [("<104547242>/vcpus/avg_usage", 0), ("<104547242>/vcpus/active", 0), ("<104547242>/logger", 0), ("public/#", 0)]              # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
+topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/commands", 0), ("public/#", 0)]              # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
 client_id = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
@@ -40,6 +40,7 @@ loggingActive = False
 
 def startLogging():
     global loggingActive
+    
     # This is so we don't start a new log if one is already started
     if loggingActive: return
     loggingActive = True
@@ -48,7 +49,7 @@ def startLogging():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     logFile = f"logs/mqtt_client_{timestamp}.log"
 
-    # Setup handler for log file
+    # Setup handler for to insert server metrics into log file
     handler = logging.FileHandler(logFile)
     handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
     logger.addHandler(handler)
@@ -57,6 +58,7 @@ def startLogging():
 
 def stopLogging():
     global loggingActive
+    
     # So we don't run into errors if there is no actual logging active
     if not loggingActive: return
     loggingActive = False
@@ -68,14 +70,11 @@ def stopLogging():
         logger.removeHandler(handler)
 
 
-
-
-
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc, properties):
         # Response code is 0 for a successful connection
+        # This is printed on every connection
         print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code {rc}\n")
-            
     
     # Connect client object to MQTT broker
     client = mqtt_client.Client(client_id=client_id, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
@@ -87,6 +86,8 @@ def connect_mqtt():
 
 def disconnect_mqtt(client: mqtt_client):
     def on_disconnect(client, userdata, flags, rc, properties):
+        # Print disconnection status
+        # This is printed on every disconnection
         print("Successfully disconnected from MQTT Broker") if rc == 0 else print(f"Disconnected with an error. Reason code: {rc}\n")
 
     client.on_disconnect = on_disconnect
@@ -108,19 +109,20 @@ def subscribe(client: mqtt_client):
         print(msg.payload.decode())
         print("=============================================")
 
-        # Process command if from logger topic
-        if msg.topic == "<104547242>/logger":
+        # Process command if from commands topic
+        # This is so someone in public can't just post the command and mess things up
+        if msg.topic == "<104547242>/commands":
             command = msg.payload.decode().strip()      # Remove all whitespace from command
             
-            # Valid commands
+            # Valid logging commands accepted
             match command:
                 case "!startlog":
                     startLogging()
                 case "!stoplog":
                     stopLogging()
         
-        # Log vCPU metrics if logging is active
-        if loggingActive and (msg.topic == "<104547242>/vcpus/avg_usage" or msg.topic == "<104547242>/vcpus/active"):
+        # Log server cluster metrics if logging is active
+        if loggingActive and (msg.topic == "<104547242>/servers/avg_cpu_util" or msg.topic == "<104547242>/servers/active"):
             logger.info("====================[SUB]====================")
             logger.info(msg.topic)
             logger.info(f"Retained?: {msg.retain}")
