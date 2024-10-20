@@ -15,7 +15,7 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-subscribeTopics = [("<104547242>/vcpus/commands", 0), ("public/#", 0)]            # Pub and sub topics need to be separate, or public will be spammed as well
+subscribeTopics = [("<104547242>/commands", 0), ("public/#", 0)]                  # Pub and sub topics need to be separate, or public will be spammed as well
 client_id = f'server-{random.randint(0, 1000)}'                                   # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
@@ -23,7 +23,7 @@ password = os.getenv('MQTT_PASSWORD')
 
 # Global variables, so multiple functions can access this
 avgVcpuUtil = 10
-vcpuActive = 1
+serversActive = 1
 
 # This is to kill the threads when a keyboard interrupt is used
 running = True
@@ -32,6 +32,7 @@ running = True
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc, properties):
         # Response code is 0 for a successful connection
+        # this is printed on every connection
         print("Connected to MQTT Broker!") if rc == 0 else print(f"Failed to connect. Reason code: {rc}\n")
             
     
@@ -45,6 +46,8 @@ def connect_mqtt():
 
 def disconnect_mqtt(client: mqtt_client):
     def on_disconnect(client, userdata, flags, rc, properties):
+        # Print disconnection status
+        # This is printed on every disconnection
         print("Successfully disconnected from MQTT Broker") if rc == 0 else print(f"Disconnected with an error. Reason code: {rc}\n")
 
     client.on_disconnect = on_disconnect
@@ -52,8 +55,8 @@ def disconnect_mqtt(client: mqtt_client):
 
 
 def pubWarning(client, msg):
-    # Pub msg to topic
-    topic = "<104547242>/vcpus/warning"
+    # Pub warning msg to topic
+    topic = "<104547242>/warnings"
     result = client.publish(topic, msg)
 
     # Print message send status to terminal
@@ -67,13 +70,14 @@ def pubWarning(client, msg):
 def pubAvgVcpuUse(client):
     global running
     global avgVcpuUtil
-    global vcpuActive
-    topic = "<104547242>/vcpus/avg_usage"
+    global serversActive
+    topic = "<104547242>/servers/avg_cpu_util"
     vcpuUtilLowCount = 0
     vcpuUtilHighCount = 0
 
+    # Loop thread forever while no keyboard interrupt
     while running:
-        # Pub msg to topic
+        # Pub avg CPU utilisation of servers to topic
         msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
         result = client.publish(topic, msg)
 
@@ -85,13 +89,16 @@ def pubAvgVcpuUse(client):
         print("---------------------------------------------")
         
         # Create variation in data
-        avgVcpuUtil += random.randint(-4, 4)
+        # This isn't a perfect simulation
+        # It doesn't take into account the inverse proportionality of adding more servers to how the cpu util will go up
+        # I will skew the randomness to favour increasing, so you don't have to wait all day to trigger a warning
+        avgVcpuUtil += random.randint(-2, 20)
 
         # Make sure utilisation stays within bounds of 0-100%
         avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
 
-        # Check if vCPU usage is too low/high
-        if avgVcpuUtil < 20 and vcpuActive > 1:
+        # Check if vCPU usage is too low/high and add to count
+        if avgVcpuUtil < 20 and serversActive > 1:
             vcpuUtilLowCount += 1
         else:
             vcpuUtilLowCount = 0
@@ -103,7 +110,7 @@ def pubAvgVcpuUse(client):
 
         # Provide a recommendation to scale in/out
         # Scaling in too early can cause resources to become overloaded fast, hence it needs to trigger low more times
-        if vcpuUtilLowCount > 10 and vcpuActive > 1:
+        if vcpuUtilLowCount > 10 and serversActive > 1:
             pubWarning(client, "Warning: CPU utilisation low")
 
         if vcpuUtilHighCount > 5:
@@ -112,14 +119,15 @@ def pubAvgVcpuUse(client):
         time.sleep(2)
 
 
-def pubVcpuActive(client):
+def pubServersActive(client):
     global running
-    global vcpuActive
-    topic = "<104547242>/vcpus/active"
+    global serversActive
+    topic = "<104547242>/servers/active"
 
+    # Loop thread forever while no keyboard interrupt
     while running:
-        # Pub msg to topic
-        msg = f"Active VCPUs: {vcpuActive}"
+        # Pub active servers to topic
+        msg = f"Active servers: {serversActive}"
         result = client.publish(topic, msg)
 
         # Print message send status to terminal
@@ -129,20 +137,22 @@ def pubVcpuActive(client):
         print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
         print("---------------------------------------------")
 
-        # Active vCPUs should stay relatively consistent, so don't need to create variation here
+        # Active servers should stay relatively consistent, so don't need to create variation here
 
         time.sleep(5)
 
 
 def handleScaleIn():
     global avgVcpuUtil
-    global vcpuActive
-    if vcpuActive > 1:
-        oldVcpuActive = vcpuActive
-        vcpuActive -= 1
+    global serversActive
+
+    # We want to have at least 1 server running, having 0 or less isn't realistic
+    if serversActive > 1:
+        oldServersActive = serversActive
+        serversActive -= 1
 
         # Increase the average utilisation proportionally as fewer vCPUs handle the same workload
-        avgVcpuUtil = int(avgVcpuUtil * (oldVcpuActive / vcpuActive))
+        avgVcpuUtil = int(avgVcpuUtil * (oldServersActive / serversActive))
         
         # Make sure utilisation stays within bounds of 0-100%
         avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
@@ -150,13 +160,13 @@ def handleScaleIn():
 
 def handleScaleOut():
     global avgVcpuUtil
-    global vcpuActive
+    global serversActive
     
-    oldVcpuActive = vcpuActive
-    vcpuActive += 1
+    oldServersActive = serversActive
+    serversActive += 1
 
-    # Decrease the average utilisation proportionally as more vCPUs handle the same workload
-    avgVcpuUtil = int(avgVcpuUtil * (oldVcpuActive / vcpuActive))
+    # Decrease the average utilisation proportionally as more servers handle the same workload
+    avgVcpuUtil = int(avgVcpuUtil * (oldServersActive / serversActive))
     
     # Make sure utilisation stays within bounds of 0-100%
     avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
@@ -174,11 +184,12 @@ def subscribe(client: mqtt_client):
         print(msg.payload.decode())
         print("=============================================")
 
-        # Process command if from logger topic
-        if msg.topic == "<104547242>/vcpus/commands":
+        # Process command if from commands topic
+        # This is so someone in public can't just post the command and mess things up
+        if msg.topic == "<104547242>/commands":
             command = msg.payload.decode().strip()      # Remove all whitespace from command
             
-            # Valid commands
+            # Valid scaling commands accepted
             match command:
                 case "!scalein":
                     handleScaleIn()
@@ -197,16 +208,17 @@ def main():
 
     # Create threads for each publish function
     avgVcpuUtilThread = threading.Thread(target = pubAvgVcpuUse, args = (client,))
-    vcpuActiveThread = threading.Thread(target = pubVcpuActive, args = (client,))
+    serversActiveThread = threading.Thread(target = pubServersActive, args = (client,))
 
     # Start threads
     avgVcpuUtilThread.start()
-    vcpuActiveThread.start()
+    serversActiveThread.start()
 
     try:
         client.loop_forever()               # Blocking network loop function for MQTT client
     except KeyboardInterrupt:
-        running = False
+        # Clean up environment
+        running = False                     # Kill the threads by setting the while condition to false
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
         disconnect_mqtt(client)
         print("Client disconnected, exiting program.")
