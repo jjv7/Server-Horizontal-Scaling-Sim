@@ -5,6 +5,8 @@ from tkinter import ttk, messagebox
 from socket import gaierror
 import os
 import random
+import time
+import threading
 
 # References: https://www.geeksforgeeks.org/python-gui-tkinter/
 #             https://www.w3schools.com/python/python_classes.asp
@@ -38,6 +40,7 @@ class MqttClientGui(tk.Tk):
         self.publishTopics = []
         self.subscribeTopics = []
         self.connected = False
+        self.handlingWarning = False
 
         # Create tabs for different sections of the client
         self.createTabs()
@@ -292,6 +295,37 @@ class MqttClientGui(tk.Tk):
             messagebox.showerror("Connection Error", f"Connection error: {err}")
 
 
+    def processWarning(self, msg):
+        topic = "<104547242>/commands"
+        warning = msg.payload.decode()
+        command = ""
+
+        # Handle one warning at a time
+        if self.handlingWarning: return
+        self.handlingWarning = True
+        
+        # Set command depending on warning
+        match warning:
+            case "Warning: CPU utilisation low":
+                command = "!scalein"
+            case "Warning: CPU utilisation high":
+                command = "!scaleout"
+            case _:
+                return  # A valid command was not received
+        
+        # Start logging server cluster metrics to keep a history of the alert
+        self.client.publish(topic, "!startlog")
+
+        # Resolve the problem the server cluster is experiencing
+        self.client.publish(topic, command)
+
+        # Keep logging information for 15 seconds
+        # This may not be perfect, another warning may be sent in the time the log is still running
+        time.sleep(10)
+        self.client.publish(topic, "!stoplog")
+        self.handlingWarning = False
+
+
     def publish(self):
         # Make sure client is connected before trying publishing
         if not self.connected:
@@ -345,6 +379,11 @@ class MqttClientGui(tk.Tk):
                 self.messagesDisplay.yview(tk.END)
 
             self.messagesDisplay.config(state=tk.DISABLED)    # Disable text input
+
+            # Automatically respond to warnings
+            if msg.topic == "<104547242>/warnings" and not self.handlingWarning:
+                warningProcess = threading.Thread(target = self.processWarning, args = (msg,))
+                warningProcess.start()
 
         # Make sure connection is established before subscribing
         if not self.connected:
