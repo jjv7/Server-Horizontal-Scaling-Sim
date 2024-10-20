@@ -92,7 +92,7 @@ def pubAvgVcpuUse(client):
         # This isn't a perfect simulation
         # It doesn't take into account the inverse proportionality of adding more servers to how the cpu util will go up
         # I will skew the randomness to favour increasing, so you don't have to wait all day to trigger a warning
-        avgVcpuUtil += random.randint(-2, 20)
+        avgVcpuUtil += random.randint(-5, 10)
 
         # Make sure utilisation stays within bounds of 0-100%
         avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
