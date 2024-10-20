@@ -10,6 +10,12 @@ import random
 #             https://www.w3schools.com/python/python_classes.asp
 #             https://www.geeksforgeeks.org/python-tkinter-messagebox-widget/
 
+# YOU DON'T HAVE TO DO THE FOLLOWING IF YOU HAVE THE .env PROVIDED BY ME
+# If monitoring the example application copy the following topics into the fields:
+# sub -> public/#,<104547242>/servers/avg_cpu_util,<104547242>/servers/active,<104547242>/warnings
+# pub -> <104547242>/commands
+
+# You will then need to press the subscribe button to be subscribed to the sub topics
 
 # Check if a .env file is present
 useEnvVariables = False
@@ -21,7 +27,7 @@ if find_dotenv():
 # Make MqttClientGui a child of Tk
 class MqttClientGui(tk.Tk):
     def __init__(self):
-        super().__init__()
+        super().__init__()                    # Allows the class to make use of Tkinter methods
         
         # Initialise window
         self.geometry("585x450")
@@ -50,66 +56,69 @@ class MqttClientGui(tk.Tk):
         tabBar.add(connectionTab, text = "Connection")
         tabBar.add(messageTab, text = "Messages")
 
+        # Initialise the UI in each of the tabs
         self.initConnectionTab(connectionTab)
         self.initMessageTab(messageTab)
 
 
     def initConnectionTab(self, connectionTab):
-        tabTitle = ttk.Label(connectionTab, text="MQTT Broker Connection Settings", font="Calibri, 18 bold")
-        tabTitle.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
+        # Title of connection tab
+        tabTitle = ttk.Label(connectionTab, text = "MQTT Broker Connection Settings", font = "Calibri, 18 bold")
+        tabTitle.grid(row = 0, column = 0, columnspan = 2, padx = 10, pady = 10, sticky = tk.W)
         
         # Add in host field
-        hostFrame = ttk.LabelFrame(connectionTab, text="Host", padding=(10, 10))
-        hostFrame.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+        hostFrame = ttk.LabelFrame(connectionTab, text = "Host", padding = (10, 10))
+        hostFrame.grid(row = 1, column = 0, padx = 10, pady = 10, sticky = tk.W)
         
-        hostLabel = ttk.Label(hostFrame, text="mqtt://")
-        hostLabel.grid(row=0, column=0, padx=(2, 3), pady=(0, 7))
+        hostLabel = ttk.Label(hostFrame, text = "mqtt://")
+        hostLabel.grid(row = 0, column = 0, padx = (2, 3), pady = (0, 7))
         
-        self.hostEntry = ttk.Entry(hostFrame, width=22)                               # Entries will require self, since we need to call them in another function later
-        self.hostEntry.grid(row=0, column=1, pady=(0, 7), sticky=tk.W)
+        self.hostEntry = ttk.Entry(hostFrame, width = 22)
+        self.hostEntry.grid(row = 0, column = 1, pady = (0, 7), sticky = tk.W)
 
 
         # Add in port field
-        portFrame = ttk.LabelFrame(connectionTab, text="Port", padding=(10, 10))
-        portFrame.grid(row=2, column=0, padx=10, pady=10, sticky=tk.W)
+        portFrame = ttk.LabelFrame(connectionTab, text = "Port", padding = (10, 10))
+        portFrame.grid(row = 2, column = 0, padx = 10, pady = 10, sticky = tk.W)
         
-        self.portEntry = ttk.Entry(portFrame, width=30)
-        self.portEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
-        self.portEntry.insert(0, 1883)                                      # Default MQTT port
+        self.portEntry = ttk.Entry(portFrame, width = 30)
+        self.portEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
+        self.portEntry.insert(0, 1883)                                      # Default MQTT port will be automatically input into the field
 
 
         # Add in username field
-        usernameFrame = ttk.LabelFrame(connectionTab, text="Username", padding=(10, 10))
-        usernameFrame.grid(row=3, column=0, padx=10, pady=10, sticky=tk.W)
+        usernameFrame = ttk.LabelFrame(connectionTab, text = "Username", padding = (10, 10))
+        usernameFrame.grid(row = 3, column = 0, padx = 10, pady = 10, sticky = tk.W)
                 
-        self.usernameEntry = ttk.Entry(usernameFrame, width=30)
-        self.usernameEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
+        self.usernameEntry = ttk.Entry(usernameFrame, width = 30)
+        self.usernameEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
 
 
         # Add in password field
-        passwordFrame = ttk.LabelFrame(connectionTab, text="Password", padding=(10, 10))
-        passwordFrame.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
+        passwordFrame = ttk.LabelFrame(connectionTab, text = "Password", padding = (10, 10))
+        passwordFrame.grid(row = 4, column = 0, padx = 10, pady = 10, sticky = tk.W)
                 
-        self.passwordEntry = ttk.Entry(passwordFrame, width=30, show="*")
-        self.passwordEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
+        self.passwordEntry = ttk.Entry(passwordFrame, width = 30, show = "*")               # show = "*" hides the password
+        self.passwordEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
 
 
         # Add in connection status section
-        connStatFrame = ttk.LabelFrame(connectionTab, text="Connection Status", padding=(10, 10))
-        connStatFrame.grid(row=2, column=1, columnspan=2, padx=30, pady=10)
+        connStatFrame = ttk.LabelFrame(connectionTab, text = "Connection Status", padding = (10, 10))
+        connStatFrame.grid(row = 2, column = 1, columnspan = 2, padx = 30, pady = 10)
 
-        self.connStatLabel = ttk.Label(connStatFrame, text="Not Connected", font="Calibri, 11 bold", background="gray64", foreground="red", width=30, anchor=tk.CENTER)
-        self.connStatLabel.grid(row=0, column=0, padx=5, pady=5)
+        self.connStatLabel = ttk.Label(connStatFrame, text = "Not Connected", font = "Calibri, 11 bold", background = "gray64", foreground = "red", width = 30, anchor = tk.CENTER)
+        self.connStatLabel.grid(row = 0, column = 0, padx = 5, pady = 5)
 
-        # Add connect button
-        connButton = ttk.Button(connectionTab, text="Connect", command=self.connect_mqtt)
-        connButton.grid(row=3, column=1, padx=(0, 30), pady=10, sticky=tk.N + tk.E)
+        # Add connect button to trigger .connect_mqtt()
+        connButton = ttk.Button(connectionTab, text = "Connect", command = self.connect_mqtt)
+        connButton.grid(row = 3, column = 1, padx = (0, 30), pady = 10, sticky = tk.N + tk.E)
 
-        disconnButton = ttk.Button(connectionTab, text="Disconnect", command=self.disconnect_mqtt)
-        disconnButton.grid(row=3, column=2, pady=10, sticky=tk.N + tk.W)
+        # Add disconnect button to trigger .disconnect_mqtt()
+        disconnButton = ttk.Button(connectionTab, text = "Disconnect", command = self.disconnect_mqtt)
+        disconnButton.grid(row = 3, column = 2, pady = 10, sticky = tk.N + tk.W)
 
 
-        # Add in preset entries according to the .env file
+        # Add in preset entries into fields according to the .env file
         if useEnvVariables:
             self.hostEntry.insert(0, os.getenv('BROKER'))
             self.usernameEntry.insert(0, os.getenv('MQTT_USERNAME'))
@@ -117,82 +126,98 @@ class MqttClientGui(tk.Tk):
 
 
     def initMessageTab(self, messageTab):
-        tabTitle = ttk.Label(messageTab, text="Messages", font="Calibri, 18 bold")
-        tabTitle.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+        # Title of message tab
+        tabTitle = ttk.Label(messageTab, text = "Messages", font = "Calibri, 18 bold")
+        tabTitle.grid(row = 0, column = 0, padx = 10, pady = 10, sticky = tk.W)
 
 
         # Create subscribe section
-        subFrame = ttk.LabelFrame(messageTab, text="Subscribe", padding=(10,10))
-        subFrame.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+        subFrame = ttk.LabelFrame(messageTab, text = "Subscribe", padding = (10, 10))
+        subFrame.grid(row = 1, column = 0, padx = 10, pady = 10, sticky = tk.W)
 
-        subTopicsLabel = ttk.Label(subFrame, text="Topics:")
-        subTopicsLabel.grid(row=0, column=0, sticky=tk.W)
+        # Create sub topics field
+        subTopicsLabel = ttk.Label(subFrame, text = "Topics:")
+        subTopicsLabel.grid(row = 0, column = 0, sticky = tk.W)
 
         self.subTopicsEntry = ttk.Entry(subFrame)
-        self.subTopicsEntry.grid(row=0, column=1, padx=(22, 0), pady=10, sticky=tk.W)
+        self.subTopicsEntry.grid(row = 0, column = 1, padx = (22, 0), pady = 10, sticky = tk.W)
 
-        subButton = ttk.Button(subFrame, text="Subscribe", command=self.subscribe)
-        subButton.grid(row=1, column=0, columnspan=2, pady=10)
+        # Button to trigger .subscribe()
+        subButton = ttk.Button(subFrame, text = "Subscribe", command = self.subscribe)
+        subButton.grid(row = 1, column = 0, columnspan = 2, pady = 10)
         
 
         # Create publish section
-        pubFrame = ttk.LabelFrame(messageTab, text="Publish", padding=(10,10))
-        pubFrame.grid(row=2, column=0, padx=10, pady=10, sticky=tk.W + tk.N)
+        pubFrame = ttk.LabelFrame(messageTab, text = "Publish", padding = (10, 10))
+        pubFrame.grid(row = 2, column = 0, padx = 10, pady = 10, sticky = tk.W + tk.N)
 
-        pubTopicsLabel = ttk.Label(pubFrame, text="Topics:")
-        pubTopicsLabel.grid(row=0, column=0, sticky=tk.W + tk.N)
+        # Create pub topics field
+        pubTopicsLabel = ttk.Label(pubFrame, text = "Topics:")
+        pubTopicsLabel.grid(row = 0, column = 0, sticky = tk.W + tk.N)
 
         self.pubTopicsEntry = ttk.Entry(pubFrame)
-        self.pubTopicsEntry.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky=tk.W)
+        self.pubTopicsEntry.grid(row = 0, column = 1, padx = (10, 0), pady = (0, 10), sticky = tk.W)
 
-        pubMessageLabel = ttk.Label(pubFrame, text="Message:")
-        pubMessageLabel.grid(row=1, column=0, sticky=tk.W)
+        # Message field
+        pubMessageLabel = ttk.Label(pubFrame, text = "Message:")
+        pubMessageLabel.grid(row = 1, column = 0, sticky = tk.W)
 
         self.pubMessageEntry = ttk.Entry(pubFrame)
-        self.pubMessageEntry.grid(row=1, column=1, padx=(10, 0), pady=10, sticky=tk.W)
+        self.pubMessageEntry.grid(row = 1, column = 1, padx = (10, 0), pady = 10, sticky = tk.W)
 
-        pubButton = ttk.Button(pubFrame, text="Publish", command=self.publish)
-        pubButton.grid(row=2, column=0, columnspan=2, pady=10)
-
-        # Create messages section
-        messagesFrame = ttk.LabelFrame(messageTab, text="Received Messages", padding=(0, 10))
-        messagesFrame.grid(row=1, column=1, rowspan=2, padx=(10, 0), pady=10, sticky=tk.W)
+        # Button to trigger .publish()
+        pubButton = ttk.Button(pubFrame, text = "Publish", command = self.publish)
+        pubButton.grid(row = 2, column = 0, columnspan = 2, pady = 10)
 
 
+        # Create messages box to display received messages
+        messagesFrame = ttk.LabelFrame(messageTab, text = "Received Messages", padding = (0, 10))
+        messagesFrame.grid(row = 1, column = 1, rowspan = 2, padx = (10, 0), pady = 10, sticky = tk.W)
+
+        # Scrollbar for easy scrolling in the messages box
         scrollbar = tk.Scrollbar(messagesFrame)
-        scrollbar.grid(row=0, column=1, sticky=tk.NSEW)
+        scrollbar.grid(row = 0, column = 1, sticky = tk.NSEW)
 
         self.messagesDisplay = tk.Text(
             messagesFrame, 
-            height=20, 
-            width=42, 
-            font="Consolas, 9", 
-            background="black", 
-            foreground="white", 
-            insertbackground="white",
-            yscrollcommand=scrollbar.set
+            height = 20, 
+            width = 42, 
+            font = "Consolas, 9", 
+            background = "black", 
+            foreground = "white", 
+            insertbackground = "white",
+            yscrollcommand = scrollbar.set
         )
 
-        self.messagesDisplay.grid(row=0, column=0, padx=(10, 0))
-        self.messagesDisplay.insert(tk.END, "=====================================\n")
-        scrollbar.config(command=self.messagesDisplay.yview)
-        self.messagesDisplay.config(state=tk.DISABLED)
+        self.messagesDisplay.grid(row = 0, column = 0, padx = (10, 0))
+        self.messagesDisplay.insert(tk.END, "=====================================\n")  # This is to create the top of the first message
+        scrollbar.config(command=self.messagesDisplay.yview)                            # Sets the scrollbar to control the y-position in the messages box
+        self.messagesDisplay.config(state=tk.DISABLED)                                  # Disable any input into the messages box
+
+        
+        # Add in preset topics into fields according to the .env file
+        # You will still need to press the subscribe button to subscribe to the topics
+        if useEnvVariables:
+            self.subTopicsEntry.insert(0, os.getenv('SUB_TOPICS'))
+            self.pubTopicsEntry.insert(0, os.getenv('PUB_TOPICS'))
 
 
     def disconnect_mqtt(self):
         def on_disconnect(client, userdata, flags, rc, properties):
-            # Show disconnection details
             self.connected = False
+
+            # Create notification windows showing the disconnection status
             if rc == 0:
                 messagebox.showinfo("Disconnection successful", "Successfully disconnected from MQTT Broker")
             else:
                 messagebox.showerror("Disconnection with error", f"Disconnected with an error. Reason code: {rc}\n")
             
+            # Change connection status to display not connected
             self.connStatLabel.config(text="Not Connected", foreground="red")
 
         self.client.on_disconnect = on_disconnect
 
-        # Only attempt disconnecting if client is connected
+        # Only attempt disconnecting if client is already connected, or errors happen
         if self.connected:
             self.client.disconnect()
 
@@ -201,52 +226,57 @@ class MqttClientGui(tk.Tk):
         def on_connect(client, userdata, flags, rc, properties):
             # No actual connection logic here
             # This is mainly for providing info about the status of a new connection
+
+            #  Create notification windows showing the connection status
             if rc == 0:
                 self.connected = True
                 messagebox.showinfo("Connection successful", "Connected to MQTT Broker!")
-                self.connStatLabel.config(text="Connected", foreground="green")
+                self.connStatLabel.config(text="Connected", foreground="green")     # Change connection status to display connected
             else:
-                self.connected = False              # Ensure connected is False in case the first connection was successful
+                self.connected = False                                              # Ensure connected is False in case the first connection was successful
                 messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason: {rc}\n")
-                self.connStatLabel.config(text="Not Connected", foreground="red")
-                self.client.loop_stop()             # If this is not here, with the wrong authentication details it will keep trying the connection
+                self.connStatLabel.config(text="Not Connected", foreground="red")   # Change connection status to display not connected just in case
+                self.client.loop_stop()                                             # If this is not here, with the wrong authentication details it will keep trying the connection
         
+        # Don't try connecting again if already connected
         if self.connected:
             messagebox.showwarning("Connection active", "Please close the current connection before connecting again")
             return
 
-
+        # Get inputs from broker and port fields
         broker = self.hostEntry.get()
         port = self.portEntry.get()
 
         # Check broker and port fields aren't empty
         if not broker and not port:
-            messagebox.showwarning("Input Error", "Please input a host and port")
+            messagebox.showerror("Input Error", "Please input a host and port")
             return
         if not broker:
-            messagebox.showwarning("Input Error", "Please input a host")
+            messagebox.showerror("Input Error", "Please input a host")
             return
         elif not port:
-            messagebox.showwarning("Input Error", "Please input a port")
+            messagebox.showerror("Input Error", "Please input a port")
             return
 
-        # Check port is a valid number from entry fields     
+        # Cast port value obtained to an int
         try:
             port = int(port)
         except ValueError:
-            messagebox.showwarning("Input Error", "Port must be a valid integer")
+            messagebox.showerror("Input Error", "Port must be a valid integer")
             return
 
-        # Validate port range (1 to 65535)
+        # Validate port is inside range (1 to 65535)
         if not (0 < port < 65536):
-            messagebox.showwarning("Input Error", "Port must be between 1 and 65535")
+            messagebox.showerror("Input Error", "Port must be between 1 and 65535")
             return
         
+        # Get inputs from username and password fields
         username = self.usernameEntry.get()
         password = self.passwordEntry.get()
 
+        # Check username and password fields aren't empty
         if not username or not password:
-            messagebox.showwarning("Input Error", "Please input a username and password")
+            messagebox.showerror("Input Error", "Please input a username and password")
             return
 
         # Connect client object to MQTT broker
@@ -256,39 +286,52 @@ class MqttClientGui(tk.Tk):
         
         try:
             self.client.connect(broker, port)
-            self.client.loop_start()
+            self.client.loop_start()            # Start networking threads for the mqtt library
         except (TimeoutError, ConnectionRefusedError, gaierror) as err:
+            # Display caught connection errors
             messagebox.showerror("Connection Error", f"Connection error: {err}")
-            self.connected = False
 
 
-    def publish(self):        
+    def publish(self):
+        # Make sure client is connected before trying publishing
         if not self.connected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
             return
 
-        self.publishTopics = [topic.strip() for topic in self.pubTopicsEntry.get().split(",")]            # Split CSVs into topics
+        # Obtain publish topics
+        # Accepts CSVs
+        # Strip gets rid of the whitespaces, so ", " is acceptable
+        self.publishTopics = [topic.strip() for topic in self.pubTopicsEntry.get().split(",")]
         
+        # Check that publish topics aren't empty
         if len(self.publishTopics) == 0:
             messagebox.showerror("Error", "Please input a topic to publish to")
             return
         
-        msg = self.pubMessageEntry.get()
+        msg = self.pubMessageEntry.get()            # Get message from field
 
+        # Make sure message field wasn't empty
         if not msg:
             messagebox.showerror("Error", "Please input a message to publish")
-        else:
-            for topic in self.publishTopics:
-                result = self.client.publish(topic, msg)
-                status = result[0]
-                
-                messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`") if status == 0 else messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
+            return
+        
+        # Publish message to all the topics specified
+        for topic in self.publishTopics:
+            result = self.client.publish(topic, msg)
+            
+            # Show status of message sent in notification
+            status = result[0]
+            if status == 0:
+                messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`")
+            else:
+                messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
 
 
     def subscribe(self):
         def on_message(client, userdata, msg):
             self.messagesDisplay.config(state=tk.NORMAL)      # Enable text input
 
+            # Display message received in message box
             self.messagesDisplay.insert(tk.END, f"{msg.topic}")
             self.messagesDisplay.insert(tk.END, f"\nQoS: {msg.qos}")
             self.messagesDisplay.insert(tk.END, f"\nRetained?: {msg.retain}")
@@ -301,29 +344,31 @@ class MqttClientGui(tk.Tk):
             if self.messagesDisplay.yview()[1] < 1.0 and self.messagesDisplay.yview()[1] >= 0.8:
                 self.messagesDisplay.yview(tk.END)
 
-            self.messagesDisplay.config(state=tk.DISABLED)    # Change to read-only
+            self.messagesDisplay.config(state=tk.DISABLED)    # Disable text input
 
-
+        # Make sure connection is established before subscribing
         if not self.connected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
             return
         
+        # Make sure topics field isn't empty
         if not self.subTopicsEntry.get():
             messagebox.showerror("Error", "Please input a topic to subscribe to")
             return
         
-        # Unsubscribe from existing topics
+        # Unsubscribe from previously subscribed topics if any
         if self.subscribeTopics:
             self.client.unsubscribe([topic[0] for topic in self.subscribeTopics])
 
-        # Clear old subscriptions and add in new ones
+        # Clear old subscriptions array and add in new subscriptions
         self.subscribeTopics = []
-        for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:
-            self.subscribeTopics.append((topic, 0))                         # To subscribe to multiple topics, we need to also send the QoS (0)
+        for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:   # This also accepts CSVs
+            self.subscribeTopics.append((topic, 0))                                             # To subscribe to multiple topics, we need to also set the QoS (0)
         
         self.client.subscribe(self.subscribeTopics)
         self.client.on_message = on_message
 
+        # Show all topics subscribed
         messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
 
 
