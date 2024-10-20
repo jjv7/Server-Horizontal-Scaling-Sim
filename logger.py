@@ -17,18 +17,19 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/commands", 0), ("public/#", 0)]              # <104547242>/temperature can be replaced with any private topic. The 0 indicates the QoS
+topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/commands", 0), ("public/#", 0)]
 client_id = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
-# Create a logs directory if it doesn't exist
-if not os.path.exists("logs"):
-    os.makedirs("logs")
+# Define the path to the logs directory within the script's directory
+scriptDir = os.path.dirname(os.path.abspath(__file__))
+logsDir = os.path.join(scriptDir, "logs")
 
-# Create unique log file using timestamp
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-logFile = f"logs/logger_client_{timestamp}.log"
+
+# Create a logs directory if it doesn't exist
+if not os.path.exists(logsDir):
+    os.makedirs(logsDir)
 
 # Initialise logging
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def startLogging():
 
     # Make unique name for log file using a timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    logFile = f"logs/mqtt_client_{timestamp}.log"
+    logFile = os.path.join(logsDir, f"mqtt_client_{timestamp}.log")
 
     # Setup handler for to insert server metrics into log file
     handler = logging.FileHandler(logFile)
