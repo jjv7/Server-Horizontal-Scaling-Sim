@@ -46,7 +46,7 @@ def connect_mqtt():
             
     
     # Connect client object to MQTT broker
-    client = mqtt_client.Client(client_id=client_id, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
+    client = mqtt_client.Client(client_id = client_id, callback_api_version = mqtt_client.CallbackAPIVersion.VERSION2)
     client.username_pw_set(username, password)
     client.on_connect = on_connect
     client.connect(broker, port)
@@ -77,10 +77,7 @@ def pubWarning(client, msg):
 
 
 def pubAvgVcpuUse(client):
-    global running
-    global avgVcpuUtil
-    global serversActive
-    global simMode
+    global running, avgVcpuUtil, serversActive, simMode
     topic = "<104547242>/servers/avg_cpu_util"
     vcpuUtilLowCount = 0
     vcpuUtilHighCount = 0
@@ -129,25 +126,17 @@ def pubAvgVcpuUse(client):
 
         if vcpuUtilHighCount > 5:
             # Beyond 8 servers, we start getting diminishing returns
-            
             if serversActive < 8:
                 pubWarning(client, "Warning: CPU utilisation high")
             else:
                 pubWarning(client, "Warning: Servers are at capacity")      # This warning isn't handled because of the diminishing returns 
-            
-            vcpuUtilHighCount = 0
-
-        
-        if vcpuUtilHighCount > 5 and serversActive == 8:
-            
             vcpuUtilHighCount = 0
 
         time.sleep(2)
 
 
 def pubServersActive(client):
-    global running
-    global serversActive
+    global running, serversActive
     topic = "<104547242>/servers/active"
 
     # Loop thread forever while no keyboard interrupt
@@ -169,8 +158,7 @@ def pubServersActive(client):
 
 
 def handleScaleIn():
-    global avgVcpuUtil
-    global serversActive
+    global avgVcpuUtil, serversActive
 
     # We want to have at least 1 server running, having 0 or less isn't realistic
     if serversActive > 1:
@@ -185,8 +173,7 @@ def handleScaleIn():
 
 
 def handleScaleOut():
-    global avgVcpuUtil
-    global serversActive
+    global avgVcpuUtil, serversActive
     
     oldServersActive = serversActive
     serversActive += 2                          # Add on two servers, since 1 isn't enough for a big difference
