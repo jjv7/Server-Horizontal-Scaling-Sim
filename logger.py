@@ -113,7 +113,7 @@ def subscribe(client: mqtt_client):
         # Process command if from commands topic
         # This is so someone in public can't just post the command and mess things up
         if msg.topic == "<104547242>/commands":
-            command = msg.payload.decode().strip()      # Remove all whitespace from command
+            command = msg.payload.decode().strip().lower()      # Remove all whitespace from command
             
             # Valid logging commands accepted
             match command:
@@ -123,7 +123,14 @@ def subscribe(client: mqtt_client):
                     stopLogging()
         
         # Log server cluster metrics if logging is active
-        if loggingActive and (msg.topic == "<104547242>/servers/avg_cpu_util" or msg.topic == "<104547242>/servers/active"):
+        # I could just do if not public, but its not as safe
+        # This is because someone can just create a new topic and post to that
+        if loggingActive and (
+            msg.topic == "<104547242>/servers/avg_cpu_util" or
+            msg.topic == "<104547242>/servers/active" or
+            msg.topic == "<104547242>/warnings" or
+            msg.topic == "<104547242>/commands"
+        ):
             logger.info("====================[SUB]====================")
             logger.info(msg.topic)
             logger.info(f"Retained?: {msg.retain}")
