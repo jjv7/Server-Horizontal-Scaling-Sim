@@ -102,13 +102,10 @@ def pubAvgVcpuUse(client):
         match simMode:
             case SimMode.NORMAL.value:
                 avgVcpuUtil += random.randint(-5, 5)
-                print("normal")
             case SimMode.INCREASING.value:
                 avgVcpuUtil += random.randint(-5, 15)
-                print("+")
             case SimMode.DECREASING.value:
                 avgVcpuUtil += random.randint(-15, 5)
-                print("-")
             
         # Make sure utilisation stays within bounds of 0-100%
         avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
@@ -236,7 +233,6 @@ def subscribe(client: mqtt_client):
                     simMode = SimMode.DECREASING.value
 
 
-    
     client.subscribe(subscribeTopics)
     client.on_message = on_message
 
