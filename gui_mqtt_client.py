@@ -294,25 +294,36 @@ class MqttClientGui(tk.Tk):
             # Display caught connection errors
             messagebox.showerror("Connection Error", f"Connection error: {err}")
 
+    def showWarningHandle(self, command, message):
+        messagebox.showinfo("Handling warning", f"Sending `{command}` in response to `{message}`")
 
     def processWarning(self, msg):
         topic = "<104547242>/commands"
         warning = msg.payload.decode()
         command = ""
+        message = ""
 
         # Handle one warning at a time
         if self.handlingWarning: return
         self.handlingWarning = True
-        
+
         # Set command depending on warning
         match warning:
             case "Warning: CPU utilisation low":
                 command = "!scalein"
+                message = "CPU utilisation low"
             case "Warning: CPU utilisation high":
                 command = "!scaleout"
+                message = "CPU utilisation high"
             case _:
-                return  # A valid command was not received
-        
+                self.handlingWarning = False
+                return  # A valid warning was not received
+
+        # Start a separate thread to show that the warning is being handled
+        # If this isn't here, the warning handling will be blocked until the pop-up is closed
+        warningHandleNotification = threading.Thread(target = self.showWarningHandle, args = (command, message)) 
+        warningHandleNotification.start()
+
         # Start logging server cluster metrics to keep a history of the alert
         self.client.publish(topic, "!startlog")
 
