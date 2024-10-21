@@ -1,9 +1,11 @@
 from paho.mqtt import client as mqtt_client
 from dotenv import load_dotenv
+from enum import Enum
 import os
 import random
 import time
 import threading
+
 
 # The broker, username and password are stored in a .env file which needs to be made if not already included
 load_dotenv()
@@ -27,6 +29,13 @@ serversActive = 1
 
 # This is to kill the threads when a keyboard interrupt is used
 running = True
+
+class SimMode(Enum):
+    NORMAL = 1
+    INCREASING = 2
+    DECREASING = 3
+
+simMode = SimMode.NORMAL.value
 
 
 def connect_mqtt():
@@ -71,6 +80,7 @@ def pubAvgVcpuUse(client):
     global running
     global avgVcpuUtil
     global serversActive
+    global simMode
     topic = "<104547242>/servers/avg_cpu_util"
     vcpuUtilLowCount = 0
     vcpuUtilHighCount = 0
@@ -88,12 +98,18 @@ def pubAvgVcpuUse(client):
         print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
         print("---------------------------------------------")
         
-        # Create variation in data
-        # This isn't a perfect simulation
-        # It doesn't take into account the inverse proportionality of adding more servers to how the cpu util will go up
-        # I will skew the randomness to favour increasing, so you don't have to wait all day to trigger a warning
-        avgVcpuUtil += random.randint(-5, 10)
-
+        # Create variation in data based on simulation mode
+        match simMode:
+            case SimMode.NORMAL.value:
+                avgVcpuUtil += random.randint(-5, 5)
+                print("normal")
+            case SimMode.INCREASING.value:
+                avgVcpuUtil += random.randint(-5, 15)
+                print("+")
+            case SimMode.DECREASING.value:
+                avgVcpuUtil += random.randint(-15, 5)
+                print("-")
+            
         # Make sure utilisation stays within bounds of 0-100%
         avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
 
@@ -112,14 +128,22 @@ def pubAvgVcpuUse(client):
         # Scaling in too early can cause resources to become overloaded fast, hence it needs to trigger low more times
         if vcpuUtilLowCount > 10 and serversActive > 1:
             pubWarning(client, "Warning: CPU utilisation low")
+            vcpuUtilLowCount = 0
 
-        if vcpuUtilHighCount > 5 and serversActive < 8:
-            pubWarning(client, "Warning: CPU utilisation high")
+        if vcpuUtilHighCount > 5:
+            # Beyond 8 servers, we start getting diminishing returns
+            
+            if serversActive < 8:
+                pubWarning(client, "Warning: CPU utilisation high")
+            else:
+                pubWarning(client, "Warning: Servers are at capacity")      # This warning isn't handled because of the diminishing returns 
+            
+            vcpuUtilHighCount = 0
 
-        # Beyond 8 servers, we start getting diminishing returns
-        # This warning isn't handled because of the diminishing returns
+        
         if vcpuUtilHighCount > 5 and serversActive == 8:
-            pubWarning(client, "Warning: Servers are at capacity")
+            
+            vcpuUtilHighCount = 0
 
         time.sleep(2)
 
@@ -183,6 +207,8 @@ def subscribe(client: mqtt_client):
     # Print message and its details in specified format
     # I tried to create something similar to the MQTTX GUI client messages
     def on_message(client, userdata, msg):
+        global simMode
+
         print("\n====================[SUB]====================")
         print(msg.topic)
         print(f"QoS: {msg.qos}")
@@ -194,14 +220,22 @@ def subscribe(client: mqtt_client):
         # Process command if from commands topic
         # This is so someone in public can't just post the command and mess things up
         if msg.topic == "<104547242>/commands":
-            command = msg.payload.decode().strip()      # Remove all whitespace from command
+            command = msg.payload.decode().strip().lower()      # Remove all whitespace from command and make everything lowercase
             
-            # Valid scaling commands accepted
+            # Valid commands accepted
             match command:
                 case "!scalein":
                     handleScaleIn()
                 case "!scaleout":
                     handleScaleOut()
+                case "!simnormal":
+                    simMode = SimMode.NORMAL.value
+                case "!simincrease":
+                    simMode = SimMode.INCREASING.value
+                case "!simdecrease":
+                    simMode = SimMode.DECREASING.value
+
+
     
     client.subscribe(subscribeTopics)
     client.on_message = on_message
