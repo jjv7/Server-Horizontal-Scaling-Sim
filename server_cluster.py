@@ -102,7 +102,7 @@ def pubAvgVcpuUse(client):
             vcpuUtilLowCount += 1
         else:
             vcpuUtilLowCount = 0
-  
+
         if avgVcpuUtil > 80:
             vcpuUtilHighCount += 1
         else:
@@ -113,8 +113,13 @@ def pubAvgVcpuUse(client):
         if vcpuUtilLowCount > 10 and serversActive > 1:
             pubWarning(client, "Warning: CPU utilisation low")
 
-        if vcpuUtilHighCount > 5:
+        if vcpuUtilHighCount > 5 and serversActive < 8:
             pubWarning(client, "Warning: CPU utilisation high")
+
+        # Beyond 8 servers, we start getting diminishing returns
+        # This warning isn't handled because of the diminishing returns
+        if vcpuUtilHighCount > 5 and serversActive == 8:
+            pubWarning(client, "Warning: Servers are at capacity")
 
         time.sleep(2)
 
@@ -163,7 +168,9 @@ def handleScaleOut():
     global serversActive
     
     oldServersActive = serversActive
-    serversActive += 1
+    serversActive += 2                          # Add on two servers, since 1 isn't enough for a big difference
+
+    if serversActive > 8: serversActive = 8     # Keep the servers capped at 8
 
     # Decrease the average utilisation proportionally as more servers handle the same workload
     avgVcpuUtil = int(avgVcpuUtil * (oldServersActive / serversActive))
