@@ -17,7 +17,7 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/commands", 0), ("public/#", 0)]
+topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/servers/warnings", 0), ("<104547242>/commands", 0), ("public/#", 0)]
 client_id = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
