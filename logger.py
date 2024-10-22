@@ -26,11 +26,6 @@ password = os.getenv('MQTT_PASSWORD')
 scriptDir = os.path.dirname(os.path.abspath(__file__))
 logsDir = os.path.join(scriptDir, "logs")
 
-
-# Create a logs directory if it doesn't exist
-if not os.path.exists(logsDir):
-    os.makedirs(logsDir)
-
 # Initialise logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -46,9 +41,13 @@ def startLogging():
     if loggingActive: return
     loggingActive = True
 
+    # Create a logs directory if it doesn't exist
+    if not os.path.exists(logsDir):
+        os.makedirs(logsDir)
+
     # Make unique name for log file using a timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    logFile = os.path.join(logsDir, f"mqtt_client_{timestamp}.log")
+    logFile = os.path.join(logsDir, f"server_log_{timestamp}.log")
 
     # Setup handler for to insert server metrics into log file
     handler = logging.FileHandler(logFile)
