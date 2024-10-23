@@ -1,2 +1,2 @@
 # MQTT-project
-Example IoT solution for environment monitoring
+Example IoT solution for the auto-scaling of web servers
