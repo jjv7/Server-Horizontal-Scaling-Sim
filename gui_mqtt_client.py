@@ -386,6 +386,7 @@ class MqttClientGui(tk.Tk):
             
             # This is for automatic scrolling of the textbox if the user is at the bottom
             # Range is because the values for yview are inconsistent
+            # This isn't a perfect solution, since you will just snap back if you don't scroll up far enough
             if self.messagesDisplay.yview()[1] < 1.0 and self.messagesDisplay.yview()[1] >= 0.8:
                 self.messagesDisplay.yview(tk.END)
 

@@ -35,6 +35,7 @@ class SimMode(Enum):
     INCREASING = 2
     DECREASING = 3
 
+# Start in normal simulation mode
 simMode = SimMode.NORMAL.value
 
 
@@ -120,6 +121,7 @@ def pubAvgVcpuUse(client):
 
         # Provide a recommendation to scale in/out
         # Scaling in too early can cause resources to become overloaded fast, hence it needs to trigger low more times
+        # Scaling out too early can cause too many resources to be created too fast, wasting computational power
         if vcpuUtilLowCount > 10 and serversActive > 1:
             pubWarning(client, "Warning: CPU utilisation low")
             vcpuUtilLowCount = 0
@@ -129,7 +131,7 @@ def pubAvgVcpuUse(client):
             if serversActive < 8:
                 pubWarning(client, "Warning: CPU utilisation high")
             else:
-                pubWarning(client, "Warning: Servers are at capacity")      # This warning isn't handled because of the diminishing returns 
+                pubWarning(client, "Warning: Servers are at capacity")      # There is no need to handle this warning in the monitor
             vcpuUtilHighCount = 0
 
         time.sleep(2)
