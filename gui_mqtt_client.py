@@ -1,27 +1,12 @@
 from paho.mqtt import client as mqtt_client
-from dotenv import load_dotenv, find_dotenv
 import tkinter as tk
 from tkinter import ttk, messagebox
 from socket import gaierror
-import os
 import random
 
 # References: https://www.geeksforgeeks.org/python-gui-tkinter/
 #             https://www.w3schools.com/python/python_classes.asp
 #             https://www.geeksforgeeks.org/python-tkinter-messagebox-widget/
-
-# YOU DON'T HAVE TO DO THE FOLLOWING IF YOU HAVE THE .env PROVIDED BY ME
-# If monitoring the example application copy the following topics into the fields:
-# sub -> public/#,<104547242>/servers/avg_cpu_util,<104547242>/servers/active,<104547242>/warnings
-# pub -> <104547242>/commands
-
-# You will then need to press the subscribe button to be subscribed to the sub topics
-
-# Check if a .env file is present
-useEnvVariables = False
-if find_dotenv():
-    useEnvVariables = True
-    load_dotenv()
 
 
 # Make MqttClientGui a child of Tk
@@ -38,6 +23,7 @@ class MqttClientGui(tk.Tk):
         self.publishTopics = []
         self.subscribeTopics = []
         self.connected = False
+        self.handlingWarning = False
 
         # Create tabs for different sections of the client
         self.createTabs()
@@ -118,13 +104,6 @@ class MqttClientGui(tk.Tk):
         disconnButton.grid(row = 3, column = 2, pady = 10, sticky = tk.N + tk.W)
 
 
-        # Add in preset entries into fields according to the .env file
-        if useEnvVariables:
-            self.hostEntry.insert(0, os.getenv('BROKER'))
-            self.usernameEntry.insert(0, os.getenv('MQTT_USERNAME'))
-            self.passwordEntry.insert(0, os.getenv('MQTT_PASSWORD'))
-
-
     def initMessageTab(self, messageTab):
         # Title of message tab
         tabTitle = ttk.Label(messageTab, text = "Messages", font = "Calibri, 18 bold")
@@ -193,13 +172,6 @@ class MqttClientGui(tk.Tk):
         self.messagesDisplay.insert(tk.END, "=====================================\n")  # This is to create the top of the first message
         scrollbar.config(command=self.messagesDisplay.yview)                            # Sets the scrollbar to control the y-position in the messages box
         self.messagesDisplay.config(state=tk.DISABLED)                                  # Disable any input into the messages box
-
-        
-        # Add in preset topics into fields according to the .env file
-        # You will still need to press the subscribe button to subscribe to the topics
-        if useEnvVariables:
-            self.subTopicsEntry.insert(0, os.getenv('SUB_TOPICS'))
-            self.pubTopicsEntry.insert(0, os.getenv('PUB_TOPICS'))
 
 
     def disconnect_mqtt(self):
@@ -341,6 +313,7 @@ class MqttClientGui(tk.Tk):
             
             # This is for automatic scrolling of the textbox if the user is at the bottom
             # Range is because the values for yview are inconsistent
+            # This isn't a perfect solution, since you will just snap back if you don't scroll up far enough
             if self.messagesDisplay.yview()[1] < 1.0 and self.messagesDisplay.yview()[1] >= 0.8:
                 self.messagesDisplay.yview(tk.END)
 
