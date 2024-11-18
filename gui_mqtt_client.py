@@ -276,7 +276,7 @@ class MqttClientGui(tk.Tk):
         self.publishTopics = [topic.strip() for topic in self.pubTopicsEntry.get().split(",")]
         
         # Check that publish topics aren't empty
-        if len(self.publishTopics) == 0:
+        if len(self.publishTopics) == 1 and self.publishTopics[0] == '':
             messagebox.showerror("Error", "Please input a topic to publish to")
             return
         
