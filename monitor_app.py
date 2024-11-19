@@ -277,11 +277,6 @@ class MqttClientGui(tk.Tk):
         username = self.usernameEntry.get()
         password = self.passwordEntry.get()
 
-        # Check username and password fields aren't empty
-        if not username or not password:
-            messagebox.showerror("Input Error", "Please input a username and password")
-            return
-
         # Connect client object to MQTT broker
         self.client = mqtt_client.Client(client_id=f'gui-mqtt-{random.randint(0, 1000)}', callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
         self.client.username_pw_set(username, password)
