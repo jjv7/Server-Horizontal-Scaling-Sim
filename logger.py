@@ -22,15 +22,13 @@ client_id = f'logger-{random.randint(0, 1000)}'                  # Assign a rand
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
-# Define the path to the logs directory within the script's directory
+# Define the path to the logs directory
 scriptDir = os.path.dirname(os.path.abspath(__file__))
 logsDir = os.path.join(scriptDir, "logs")
 
-# Initialise logging
+# Initialise logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-# Flag for controlling logging
 loggingActive = False
 
 
@@ -86,9 +84,10 @@ def connect_mqtt():
 
 def disconnect_mqtt(client: mqtt_client):
     def on_disconnect(client, userdata, flags, rc, properties):
-        # Print disconnection status
-        # This is printed on every disconnection
-        print("Successfully disconnected from MQTT Broker") if rc == 0 else print(f"Disconnected with an error. Reason code: {rc}\n")
+        if rc == 0:
+            print("Successfully disconnected from MQTT Broker")
+        else:
+            print(f"Disconnected with an error. Reason code: {rc}\n")
 
     client.on_disconnect = on_disconnect
     client.disconnect()
@@ -144,20 +143,14 @@ def subscribe(client: mqtt_client):
     client.on_message = on_message
 
 
-def main():
-    # Setup MQTT client
+if __name__ == "__main__":
     client = connect_mqtt()
     subscribe(client)
     
     try:
-        client.loop_forever()       # Blocking network loop function for MQTT client
+        client.loop_forever()
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
-
-        # Clean up program before ending
+    finally:
         stopLogging()
         disconnect_mqtt(client)
-
-
-if __name__ == "__main__":
-    main()
