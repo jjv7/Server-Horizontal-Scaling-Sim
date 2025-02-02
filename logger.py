@@ -32,33 +32,41 @@ logger.setLevel(logging.INFO)
 loggingActive = False
 
 
-def startLogging():
+def startLogging() -> None:
+    """Create and setup logging handler"""
     global loggingActive
-    
-    # This is so we don't start a new log if one is already started
-    if loggingActive: return
+    if loggingActive: return            # This is so we don't start a new log if one is already started
+
     loggingActive = True
+    os.makedirs(logsDir, exist_ok=True) # Ensures log directory exists
 
-    # Create a logs directory if it doesn't exist
-    if not os.path.exists(logsDir):
-        os.makedirs(logsDir)
-
-    # Make unique name for log file using a timestamp
+    # Make unique name for the log file using current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     logFile = os.path.join(logsDir, f"server_log_{timestamp}.log")
 
-    # Setup handler for to insert server metrics into log file
-    handler = logging.FileHandler(logFile)
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-    logger.addHandler(handler)
-    logger.info("Start log:")
+    # Ensure there are no existing handlers
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
 
-
-def stopLogging():
-    global loggingActive
+    try:
+        # Setup handler to insert server metrics into log file
+        handler = logging.FileHandler(logFile)
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+        logger.addHandler(handler)
     
-    # So we don't run into errors if there is no actual logging active
-    if not loggingActive: return
+        logger.info("Start log:")
+    except Exception as e:
+        loggingActive = False
+        print(f"Failed to start logging: {e}")
+
+
+def stopLogging() -> None:
+    """Stops logging and cleans up handlers."""
+    global loggingActive
+
+    if not loggingActive: return    # no need to stop logging if already stopped
+    
     loggingActive = False
     logger.info("End log.")
 
