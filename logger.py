@@ -18,7 +18,7 @@ load_dotenv()
 broker = os.getenv('BROKER')
 port = 1883
 topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/servers/warnings", 0), ("<104547242>/commands", 0), ("public/#", 0)]
-client_id = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
+clientId = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
@@ -76,26 +76,37 @@ def stopLogging() -> None:
         logger.removeHandler(handler)
 
 
-def connect_mqtt():
+def connect_mqtt() -> mqtt_client:
+    """Connects to the MQTT broker and returns the client object."""
     def on_connect(client, userdata, flags, rc, properties):
-        # Response code is 0 for a successful connection
-        # This is printed on every connection
-        print("Connected to MQTT Broker!") if rc == 0 else print("Failed to connect, return code {rc}\n")
+        """Callback when connected to the broker."""
+        if rc == 0: 
+            print("Connected to MQTT Broker!")
+        else: 
+            print("Failed to connect, return code {rc}")
     
-    # Connect client object to MQTT broker
-    client = mqtt_client.Client(client_id=client_id, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
+    client = mqtt_client.Client(client_id=clientId, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
     client.username_pw_set(username, password)
     client.on_connect = on_connect
-    client.connect(broker, port)
+
+    try:
+        client.connect(broker, port)
+        print(f"Attempting to connect to {broker} on port {port}")
+    except Exception as e:
+        print(f"Error occurred while connecting to the MQTT broker: {e}")
+        return None
+
     return client
 
 
-def disconnect_mqtt(client: mqtt_client):
+def disconnect_mqtt(client: mqtt_client) -> None:
+    """Disconnects client from the MQTT broker."""
     def on_disconnect(client, userdata, flags, rc, properties):
+        """Callback when disconnected from the broker."""
         if rc == 0:
             print("Successfully disconnected from MQTT Broker")
         else:
-            print(f"Disconnected with an error. Reason code: {rc}\n")
+            print(f"Disconnected with an error. Reason code: {rc}")
 
     client.on_disconnect = on_disconnect
     client.disconnect()
@@ -151,14 +162,27 @@ def subscribe(client: mqtt_client):
     client.on_message = on_message
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main program logic."""
+    print("Starting the logger...")
+    
     client = connect_mqtt()
-    subscribe(client)
+    if client is None:
+        print("Failed to connect to the MQTT broker. Exiting...")
+        stopLogging()
+        return
     
     try:
+        subscribe(client)
         client.loop_forever()
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
+    except Exception as e:
+        print(f"Error during main operation: {e}")
     finally:
         stopLogging()
         disconnect_mqtt(client)
+
+
+if __name__ == "__main__":
+    main()
