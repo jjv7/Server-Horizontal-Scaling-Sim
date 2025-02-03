@@ -13,7 +13,6 @@ load_dotenv()
 # References: https://www.emqx.com/en/blog/how-to-use-mqtt-in-python
 #             https://github.com/eclipse/paho.mqtt.python/blob/master/docs/migrations.rst
 
-
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
@@ -25,9 +24,20 @@ topics = [
     (f"{baseTopic}/commands", 0),
     ("public/#", 0)
 ]
-clientId = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
+clientId = f'logger-{random.randint(0, 1000)}'  # Assign a random ID to the client
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
+
+# Environment variable checks
+if not broker:
+    print("Missing MQTT BROKER environment variable in .env file")
+    exit(1)
+
+if not username or not password:
+    username = None
+    password = None
+    print("Missing MQTT_USERNAME and/or MQTT_PASSWORD environment variables in .env file")
+    print("MQTT client will attempt to connect without username and password")
 
 # Define the path to the logs directory
 scriptDir = os.path.dirname(os.path.abspath(__file__))
@@ -120,7 +130,7 @@ def disconnect_mqtt(client: mqtt_client) -> None:
     client.disconnect()
 
 
-def subscribe(client: mqtt_client):
+def subscribe(client: mqtt_client) -> None:
     """Subscribe client to topics."""
     def on_message(client, userdata, msg):
         """Print received messages to terminal and process commands"""
@@ -162,10 +172,9 @@ def subscribe(client: mqtt_client):
             logger.info(msg.payload.decode())
             logger.info("=============================================")
 
-
+    client.on_message = on_message
     client.subscribe(topics)
     print(f"Subscribed to topics: {topics}\n")
-    client.on_message = on_message
 
 
 def main() -> None:
