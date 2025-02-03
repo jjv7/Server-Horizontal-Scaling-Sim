@@ -82,6 +82,7 @@ def connect_mqtt() -> mqtt_client:
         """Callback when connected to the broker."""
         if rc == 0: 
             print("Connected to MQTT Broker!")
+            subscribe(client)
         else: 
             print("Failed to connect, return code {rc}")
     
@@ -113,12 +114,11 @@ def disconnect_mqtt(client: mqtt_client) -> None:
 
 
 def subscribe(client: mqtt_client):
-    # Print message and its details in specified format
-    # I tried to create something similar to the MQTTX GUI client messages
+    """Subscribe client to topics."""
     def on_message(client, userdata, msg):
+        """Print received messages to terminal and process commands"""
         global loggingActive
 
-        # Print received messages to terminal
         print("\n====================[SUB]====================")
         print(msg.topic)
         print(f"QoS: {msg.qos}")
@@ -127,27 +127,24 @@ def subscribe(client: mqtt_client):
         print(msg.payload.decode())
         print("=============================================")
 
-        # Process command if from commands topic
-        # This is so someone in public can't just post the command and mess things up
         if msg.topic == "<104547242>/commands":
-            command = msg.payload.decode().strip().lower()      # Remove all whitespace from command
+            # Remove all whitespace from command
+            command = msg.payload.decode().strip().lower()
             
             # Valid logging commands accepted
-            match command:
-                case "!startlog":
-                    startLogging()
-                case "!stoplog":
-                    stopLogging()
+            commands = {
+                "!startlog": startLogging,
+                "!stoplog": stopLogging
+            }
+            if command in commands: commands[command]()
         
-        # Log server cluster metrics if logging is active
-        # I could just do if not public, but its not as safe
-        # This is because someone can just create a new topic and post to that
-        if loggingActive and (
-            msg.topic == "<104547242>/servers/avg_cpu_util" or
-            msg.topic == "<104547242>/servers/active" or
-            msg.topic == "<104547242>/warnings" or
-            msg.topic == "<104547242>/commands"
-        ):
+        logTopics = {
+            "<104547242>/servers/avg_cpu_util",
+            "<104547242>/servers/active",
+            "<104547242>/warnings",
+            "<104547242>/commands"
+        }
+        if loggingActive and msg.topic in logTopics:
             logger.info("====================[SUB]====================")
             logger.info(msg.topic)
             logger.info(f"Retained?: {msg.retain}")
@@ -159,6 +156,7 @@ def subscribe(client: mqtt_client):
 
 
     client.subscribe(topics)
+    print(f"Subscribed to topics: {topics}\n")
     client.on_message = on_message
 
 
@@ -173,7 +171,6 @@ def main() -> None:
         return
     
     try:
-        subscribe(client)
         client.loop_forever()
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
@@ -182,6 +179,7 @@ def main() -> None:
     finally:
         stopLogging()
         disconnect_mqtt(client)
+        print("Client disconnected, exiting program.")
 
 
 if __name__ == "__main__":
