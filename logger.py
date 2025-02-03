@@ -17,7 +17,14 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-topics = [("<104547242>/servers/avg_cpu_util", 0), ("<104547242>/servers/active", 0), ("<104547242>/servers/warnings", 0), ("<104547242>/commands", 0), ("public/#", 0)]
+baseTopic = "<104547242>"
+topics = [
+    (f"{baseTopic}/servers/avg_cpu_util", 0),
+    (f"{baseTopic}/servers/active", 0),
+    (f"{baseTopic}/servers/warnings", 0),
+    (f"{baseTopic}/commands", 0),
+    ("public/#", 0)
+]
 clientId = f'logger-{random.randint(0, 1000)}'                  # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
@@ -84,7 +91,7 @@ def connect_mqtt() -> mqtt_client:
             print("Connected to MQTT Broker!")
             subscribe(client)
         else: 
-            print("Failed to connect, return code {rc}")
+            print(f"Failed to connect, return code {rc}")
     
     client = mqtt_client.Client(client_id=clientId, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
     client.username_pw_set(username, password)
@@ -127,22 +134,23 @@ def subscribe(client: mqtt_client):
         print(msg.payload.decode())
         print("=============================================")
 
-        if msg.topic == "<104547242>/commands":
+        if msg.topic == f"{baseTopic}/commands":
             # Remove all whitespace from command
             command = msg.payload.decode().strip().lower()
             
-            # Valid logging commands accepted
+            # Execute valid commands
             commands = {
                 "!startlog": startLogging,
                 "!stoplog": stopLogging
             }
             if command in commands: commands[command]()
         
+        # Log message if from valid topic
         logTopics = {
-            "<104547242>/servers/avg_cpu_util",
-            "<104547242>/servers/active",
-            "<104547242>/warnings",
-            "<104547242>/commands"
+            f"{baseTopic}/servers/avg_cpu_util",
+            f"{baseTopic}/servers/active",
+            f"{baseTopic}/warnings",
+            f"{baseTopic}/commands"
         }
         if loggingActive and msg.topic in logTopics:
             logger.info("====================[SUB]====================")
