@@ -101,7 +101,7 @@ def connect_mqtt() -> mqtt_client:
             print("Connected to MQTT Broker!")
             subscribe(client)
         else: 
-            print(f"Failed to connect, return code {rc}")
+            print(f"Failed to connect. Reason code: {rc}")
     
     client = mqtt_client.Client(client_id=clientId, callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
     client.username_pw_set(username, password)

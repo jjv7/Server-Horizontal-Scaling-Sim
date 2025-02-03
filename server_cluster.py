@@ -40,7 +40,9 @@ simMode = SimMode.NORMAL.value
 
 
 def connect_mqtt():
+    """Connects to the MQTT broker and returns the client object."""
     def on_connect(client, userdata, flags, rc, properties):
+        """Callback when connected to the broker."""
         # Response code is 0 for a successful connection
         # this is printed on every connection
         print("Connected to MQTT Broker!") if rc == 0 else print(f"Failed to connect. Reason code: {rc}\n")
