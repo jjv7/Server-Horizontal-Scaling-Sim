@@ -177,15 +177,14 @@ def subscribe(client: mqtt_client) -> None:
     print(f"Subscribed to topics: {topics}\n")
 
 
-def main() -> None:
-    """Main program logic."""
+if __name__ == "__main__":
     print("Starting the logger...")
     
     client = connect_mqtt()
     if client is None:
         print("Failed to connect to the MQTT broker. Exiting...")
         stopLogging()
-        return
+        exit(1)
     
     try:
         client.loop_forever()
@@ -197,7 +196,3 @@ def main() -> None:
         stopLogging()
         disconnect_mqtt(client)
         print("Client disconnected, exiting program.")
-
-
-if __name__ == "__main__":
-    main()
