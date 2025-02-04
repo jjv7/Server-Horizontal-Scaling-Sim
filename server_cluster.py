@@ -28,7 +28,7 @@ avgVcpuUtil = 10
 serversActive = 1
 
 # This is to kill the threads when a keyboard interrupt is used
-running = True
+isRunning = True
 
 class SimMode(Enum):
     NORMAL = 1
@@ -39,29 +39,38 @@ class SimMode(Enum):
 simMode = SimMode.NORMAL.value
 
 
-def connect_mqtt():
+def connect_mqtt() -> mqtt_client:
     """Connects to the MQTT broker and returns the client object."""
     def on_connect(client, userdata, flags, rc, properties):
         """Callback when connected to the broker."""
-        # Response code is 0 for a successful connection
-        # this is printed on every connection
-        print("Connected to MQTT Broker!") if rc == 0 else print(f"Failed to connect. Reason code: {rc}\n")
-            
+        if rc == 0: 
+            print("Connected to MQTT Broker!")
+        else:
+            print(f"Failed to connect. Reason code: {rc}")            
     
-    # Connect client object to MQTT broker
     client = mqtt_client.Client(client_id = client_id, callback_api_version = mqtt_client.CallbackAPIVersion.VERSION2)
     client.username_pw_set(username, password)
     client.on_connect = on_connect
-    client.connect(broker, port)
+
+    try:
+        print(f"Attempting to connect to {broker} on port {port}")
+        client.connect(broker, port)
+    except Exception as e:
+        print(f"Error occurred while connecting to the MQTT broker: {e}")
+        return None
+
     return client
 
 
-def disconnect_mqtt(client: mqtt_client):
+def disconnect_mqtt(client: mqtt_client) -> None:
+    """Disconnects client from the MQTT broker."""
     def on_disconnect(client, userdata, flags, rc, properties):
-        # Print disconnection status
-        # This is printed on every disconnection
-        print("Successfully disconnected from MQTT Broker") if rc == 0 else print(f"Disconnected with an error. Reason code: {rc}\n")
-
+        """Callback when disconnected from the broker."""
+        if rc == 0:
+            print("Successfully disconnected from MQTT Broker")
+        else:
+            print(f"Disconnected with an error. Reason code: {rc}")
+            
     client.on_disconnect = on_disconnect
     client.disconnect()
 
@@ -80,13 +89,13 @@ def pubWarning(client, msg):
 
 
 def pubAvgVcpuUse(client):
-    global running, avgVcpuUtil, serversActive, simMode
+    global isRunning, avgVcpuUtil, serversActive, simMode
     topic = "<104547242>/servers/avg_cpu_util"
     vcpuUtilLowCount = 0
     vcpuUtilHighCount = 0
 
     # Loop thread forever while no keyboard interrupt
-    while running:
+    while isRunning:
         # Pub avg CPU utilisation of servers to topic
         msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
         result = client.publish(topic, msg)
@@ -140,11 +149,11 @@ def pubAvgVcpuUse(client):
 
 
 def pubServersActive(client):
-    global running, serversActive
+    global isRunning, serversActive
     topic = "<104547242>/servers/active"
 
     # Loop thread forever while no keyboard interrupt
-    while running:
+    while isRunning:
         # Pub active servers to topic
         msg = f"Active servers: {serversActive}"
         result = client.publish(topic, msg)
@@ -229,25 +238,37 @@ def subscribe(client: mqtt_client):
 
 
 
-def main():
-    global running
+def main() -> None:
+    """Main prograam logic."""
+    global isRunning
+    print("Starting the server cluster simulation...")
+    
     client = connect_mqtt()
+    if client is None:
+        print("Failed to connect to the MQTT broker. Exiting...")
+        return
+
     subscribe(client)
 
     # Create threads for each publish function
     avgVcpuUtilThread = threading.Thread(target = pubAvgVcpuUse, args = (client,))
     serversActiveThread = threading.Thread(target = pubServersActive, args = (client,))
 
-    # Start threads
     avgVcpuUtilThread.start()
     serversActiveThread.start()
 
     try:
-        client.loop_forever()               # Blocking network loop function for MQTT client
+        client.loop_forever()
     except KeyboardInterrupt:
-        # Clean up environment
-        running = False                     # Kill the threads by setting the while condition to false
         print("\nKeyboardInterrupt detected, disconnecting from MQTT broker...")
+    except Exception as e:
+        print(f"Error during main operation: {e}")
+    finally:
+        # Signal the threads to stop and wait for them to finish operations
+        isRunning = False
+        avgVcpuUtilThread.join()
+        serversActiveThread.join()
+
         disconnect_mqtt(client)
         print("Client disconnected, exiting program.")
 
