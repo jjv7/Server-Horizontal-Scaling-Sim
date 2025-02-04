@@ -108,8 +108,8 @@ def connect_mqtt() -> mqtt_client:
     client.on_connect = on_connect
 
     try:
-        client.connect(broker, port)
         print(f"Attempting to connect to {broker} on port {port}")
+        client.connect(broker, port)
     except Exception as e:
         print(f"Error occurred while connecting to the MQTT broker: {e}")
         return None
