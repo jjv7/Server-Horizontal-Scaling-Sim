@@ -200,10 +200,10 @@ def handleScaleOut():
     avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
 
 
-def subscribe(client: mqtt_client):
-    # Print message and its details in specified format
-    # I tried to create something similar to the MQTTX GUI client messages
+def subscribe(client: mqtt_client) -> None:
+    """Subscribe client to topics."""
     def on_message(client, userdata, msg):
+        """Print received messages to terminal and process commands"""
         global simMode
 
         print("\n====================[SUB]====================")
@@ -214,32 +214,33 @@ def subscribe(client: mqtt_client):
         print(msg.payload.decode())
         print("=============================================")
 
-        # Process command if from commands topic
-        # This is so someone in public can't just post the command and mess things up
         if msg.topic == "<104547242>/commands":
-            command = msg.payload.decode().strip().lower()      # Remove all whitespace from command and make everything lowercase
+            cmdActions = {
+                "!scalein": handleScaleIn,
+                "!scaleout": handleScaleOut,
+                "!simnormal": SimMode.NORMAL.value,
+                "!simincrease": SimMode.INCREASING.value,
+                "!simdecrease": SimMode.DECREASING.value
+            }
+
+            # Remove all whitespace from command and make everything lowercase
+            command = msg.payload.decode().strip().lower()
             
-            # Valid commands accepted
-            match command:
-                case "!scalein":
-                    handleScaleIn()
-                case "!scaleout":
-                    handleScaleOut()
-                case "!simnormal":
-                    simMode = SimMode.NORMAL.value
-                case "!simincrease":
-                    simMode = SimMode.INCREASING.value
-                case "!simdecrease":
-                    simMode = SimMode.DECREASING.value
+            # Execute valid commands
+            if command in cmdActions:
+                action = cmdActions[command]
+                result = action() if callable(action) else action   # Call function if function
 
+                if not callable(action): simMode = result           # Update simMode if value
 
-    client.subscribe(subscribeTopics)
     client.on_message = on_message
+    client.subscribe(subscribeTopics)
+    print(f"Subscribed to topics: {subscribeTopics}\n")
 
 
 
 def main() -> None:
-    """Main prograam logic."""
+    """Main program logic."""
     global isRunning
     print("Starting the server cluster simulation...")
     
