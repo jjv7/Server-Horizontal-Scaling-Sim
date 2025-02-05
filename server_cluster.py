@@ -75,37 +75,27 @@ def disconnect_mqtt(client: mqtt_client) -> None:
     client.disconnect()
 
 
-def pubWarning(client, msg):
-    # Pub warning msg to topic
-    topic = "<104547242>/warnings"
+def pubMsg(client: mqtt_client, topic: str, msg: str) -> None:
     result = client.publish(topic, msg)
-
-    # Print message send status to terminal
     status = result[0]
+
     print("\n--------------------[PUB]--------------------")
     print(topic)
-    print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
+    print(f"\nSent:\n{msg}") if status == 0 else print("Failed to send message to topic")
     print("---------------------------------------------")
 
 
 def pubAvgVcpuUse(client):
     global isRunning, avgVcpuUtil, serversActive, simMode
     topic = "<104547242>/servers/avg_cpu_util"
+    warningTopic = "<104547242>/warnings"
     vcpuUtilLowCount = 0
     vcpuUtilHighCount = 0
 
     # Loop thread forever while no keyboard interrupt
     while isRunning:
-        # Pub avg CPU utilisation of servers to topic
         msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
-        result = client.publish(topic, msg)
-
-        # Print message send status to terminal
-        status = result[0]
-        print("\n--------------------[PUB]--------------------")
-        print(topic)
-        print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
-        print("---------------------------------------------")
+        pubMsg(client, topic, msg)
         
         # Create variation in data based on simulation mode
         match simMode:
@@ -134,15 +124,15 @@ def pubAvgVcpuUse(client):
         # Scaling in too early can cause resources to become overloaded fast, hence it needs to trigger low more times
         # Scaling out too early can cause too many resources to be created too fast, wasting computational power
         if vcpuUtilLowCount > 10 and serversActive > 1:
-            pubWarning(client, "Warning: CPU utilisation low")
+            pubMsg(client, warningTopic, "Warning: CPU utilisation low")
             vcpuUtilLowCount = 0
 
         if vcpuUtilHighCount > 5:
             # Beyond 8 servers, we start getting diminishing returns
             if serversActive < 8:
-                pubWarning(client, "Warning: CPU utilisation high")
+                pubMsg(client, warningTopic, "Warning: CPU utilisation high")
             else:
-                pubWarning(client, "Warning: Servers are at capacity")      # There is no need to handle this warning in the monitor
+                pubMsg(client, warningTopic, "Warning: Servers are at capacity")      # There is no need to handle this warning in the monitor
             vcpuUtilHighCount = 0
 
         time.sleep(2)
@@ -156,14 +146,7 @@ def pubServersActive(client):
     while isRunning:
         # Pub active servers to topic
         msg = f"Active servers: {serversActive}"
-        result = client.publish(topic, msg)
-
-        # Print message send status to terminal
-        status = result[0]
-        print("\n--------------------[PUB]--------------------")
-        print(topic)
-        print(f"\nSent:\n{msg}") if status == 0 else print(f"Failed to send message to topic")
-        print("---------------------------------------------")
+        pubMsg(client, topic, msg)
 
         # Active servers should stay relatively consistent, so don't need to create variation here
 
