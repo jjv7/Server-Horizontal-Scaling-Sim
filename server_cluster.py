@@ -1,6 +1,7 @@
 from paho.mqtt import client as mqtt_client
 from dotenv import load_dotenv
 from enum import Enum
+from textwrap import dedent
 import os
 import random
 import time
@@ -79,10 +80,19 @@ def pubMsg(client: mqtt_client, topic: str, msg: str) -> None:
     result = client.publish(topic, msg)
     status = result[0]
 
-    print("\n--------------------[PUB]--------------------")
-    print(topic)
-    print(f"\nSent:\n{msg}") if status == 0 else print("Failed to send message to topic")
-    print("---------------------------------------------")
+    # Without the whitespace, dedent will not work properly due to the \n
+    if status == 0:
+        sendMsg = f"Sent:\n{" " * 17}{msg}"
+    else:
+        sendMsg = f'Error code: {status}\n{" " * 17}Failed to publish: "{msg}"'
+    
+    print(dedent(f"""\
+                 --------------------[PUB]--------------------
+                 {topic}
+
+                 {sendMsg}
+                 ---------------------------------------------
+                 """))
 
 
 def pubAvgVcpuUse(client):
@@ -189,13 +199,16 @@ def subscribe(client: mqtt_client) -> None:
         """Print received messages to terminal and process commands"""
         global simMode
 
-        print("\n====================[SUB]====================")
-        print(msg.topic)
-        print(f"QoS: {msg.qos}")
-        print(f"Retained?: {msg.retain}")
-        print(f"\nMessage:")
-        print(msg.payload.decode())
-        print("=============================================")
+        print(dedent(f"""\
+                     ====================[SUB]====================
+                     {msg.topic}
+                     QoS: {msg.qos}
+                     Retained?: {msg.retain}
+                     
+                     Message:
+                     {msg.payload.decode()}
+                     =============================================
+                     """))
 
         if msg.topic == "<104547242>/commands":
             cmdActions = {
