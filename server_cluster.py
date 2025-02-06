@@ -97,16 +97,18 @@ def pubMsg(client: mqtt_client, topic: str, msg: str) -> None:
 
 
 def pubAvgVcpuUse(client):
-    global isRunning, avgVcpuUtil, serversActive, simMode
-    topic = "<104547242>/servers/avg_cpu_util"
-    warningTopic = "<104547242>/warnings"
-    vcpuUtilLowCount = 0
-    vcpuUtilHighCount = 0
+    """Publishes the average CPU utilisation"""
 
-    # Loop thread forever while no keyboard interrupt
+    global isRunning, avgVcpuUtil, serversActive, simMode
+
+    avgTopic = "<104547242>/servers/avg_cpu_util"
+    warningTopic = "<104547242>/warnings"
+    lowCount = 0
+    highCount = 0
+
     while isRunning:
         msg = f"Avg CPU utilisation: {avgVcpuUtil}%"
-        pubMsg(client, topic, msg)
+        pubMsg(client, avgTopic, msg)
         
         # Create variation in data based on simulation mode
         match simMode:
@@ -122,40 +124,39 @@ def pubAvgVcpuUse(client):
 
         # Check if vCPU usage is too low/high and add to count
         if avgVcpuUtil < 20 and serversActive > 1:
-            vcpuUtilLowCount += 1
+            lowCount += 1
         else:
-            vcpuUtilLowCount = 0
+            lowCount = 0
 
         if avgVcpuUtil > 80:
-            vcpuUtilHighCount += 1
+            highCount += 1
         else:
-            vcpuUtilHighCount = 0
+            highCount = 0
 
         # Provide a recommendation to scale in/out
         # Scaling in too early can cause resources to become overloaded fast, hence it needs to trigger low more times
         # Scaling out too early can cause too many resources to be created too fast, wasting computational power
-        if vcpuUtilLowCount > 10 and serversActive > 1:
+        if lowCount > 10 and serversActive > 1:
             pubMsg(client, warningTopic, "Warning: CPU utilisation low")
-            vcpuUtilLowCount = 0
+            lowCount = 0
 
-        if vcpuUtilHighCount > 5:
+        if highCount > 5:
             # Beyond 8 servers, we start getting diminishing returns
             if serversActive < 8:
                 pubMsg(client, warningTopic, "Warning: CPU utilisation high")
             else:
                 pubMsg(client, warningTopic, "Warning: Servers are at capacity")      # There is no need to handle this warning in the monitor
-            vcpuUtilHighCount = 0
+            highCount = 0
 
         time.sleep(2)
 
 
 def pubServersActive(client):
+    """Publishes the active servers"""
     global isRunning, serversActive
     topic = "<104547242>/servers/active"
 
-    # Loop thread forever while no keyboard interrupt
     while isRunning:
-        # Pub active servers to topic
         msg = f"Active servers: {serversActive}"
         pubMsg(client, topic, msg)
 
