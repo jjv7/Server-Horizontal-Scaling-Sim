@@ -96,7 +96,7 @@ def pubMsg(client: mqtt_client, topic: str, msg: str) -> None:
                  """))
 
 
-def pubAvgVcpuUse(client):
+def pubAvgVcpuUse(client) -> None:
     """Publishes the average CPU utilisation"""
 
     global isRunning, avgVcpuUtil, serversActive, simMode
@@ -151,7 +151,7 @@ def pubAvgVcpuUse(client):
         time.sleep(2)
 
 
-def pubServersActive(client):
+def pubServersActive(client) -> None:
     """Publishes the active servers"""
     global isRunning, serversActive
     topic = "<104547242>/servers/active"
@@ -240,23 +240,21 @@ def subscribe(client: mqtt_client) -> None:
     print(f"Subscribed to topics: {subscribeTopics}\n")
 
 
-
-def main() -> None:
-    """Main program logic."""
-    global isRunning
+if __name__ == "__main__":
     print("Starting the server cluster simulation...")
     
     client = connect_mqtt()
     if client is None:
         print("Failed to connect to the MQTT broker. Exiting...")
-        return
+        exit(1)
 
     subscribe(client)
 
     # Create threads for each publish function
-    avgVcpuUtilThread = threading.Thread(target = pubAvgVcpuUse, args = (client,))
-    serversActiveThread = threading.Thread(target = pubServersActive, args = (client,))
+    avgVcpuUtilThread = threading.Thread(target=pubAvgVcpuUse, args=(client,))
+    serversActiveThread = threading.Thread(target=pubServersActive, args=(client,))
 
+    print("Starting publishing threads")
     avgVcpuUtilThread.start()
     serversActiveThread.start()
 
@@ -271,10 +269,7 @@ def main() -> None:
         isRunning = False
         avgVcpuUtilThread.join()
         serversActiveThread.join()
+        print("Successfully stopped publishing threads")
 
         disconnect_mqtt(client)
         print("Client disconnected, exiting program.")
-
-
-if __name__ == "__main__":
-    main()
