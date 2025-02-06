@@ -46,6 +46,7 @@ def connect_mqtt() -> mqtt_client:
         """Callback when connected to the broker."""
         if rc == 0: 
             print("Connected to MQTT Broker!")
+            subscribe(client)
         else:
             print(f"Failed to connect. Reason code: {rc}")            
     
@@ -247,8 +248,6 @@ if __name__ == "__main__":
     if client is None:
         print("Failed to connect to the MQTT broker. Exiting...")
         exit(1)
-
-    subscribe(client)
 
     # Create threads for each publish function
     avgVcpuUtilThread = threading.Thread(target=pubAvgVcpuUse, args=(client,))
