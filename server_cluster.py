@@ -24,6 +24,16 @@ client_id = f'server-{random.randint(0, 1000)}'                     # Assign a r
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
+# Environment variable checks
+if not broker:
+    print("Missing MQTT BROKER environment variable in .env file")
+    exit(1)
+
+if not username or not password:
+    username = None
+    password = None
+    print("Missing MQTT_USERNAME and/or MQTT_PASSWORD environment variables in .env file")
+    print("MQTT client will attempt to connect without username and password")
 
 # Global variables, so multiple functions can access this
 avgVcpuUtil = 10
