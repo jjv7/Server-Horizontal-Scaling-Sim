@@ -1,6 +1,7 @@
 from paho.mqtt import client as mqtt_client
 from dotenv import load_dotenv
 from datetime import datetime
+from textwrap import dedent
 import os
 import random
 import logging
@@ -136,13 +137,16 @@ def subscribe(client: mqtt_client) -> None:
         """Print received messages to terminal and process commands"""
         global loggingActive
 
-        print("\n====================[SUB]====================")
-        print(msg.topic)
-        print(f"QoS: {msg.qos}")
-        print(f"Retained?: {msg.retain}")
-        print(f"\nMessage:")
-        print(msg.payload.decode())
-        print("=============================================")
+        print(dedent(f"""\
+                     ====================[SUB]====================
+                     {msg.topic}
+                     QoS: {msg.qos}
+                     Retained?: {msg.retain}
+                     
+                     Message:
+                     {msg.payload.decode()}
+                     =============================================
+                     """))
 
         if msg.topic == f"{baseTopic}/commands":
             # Remove all whitespace from command
@@ -162,15 +166,18 @@ def subscribe(client: mqtt_client) -> None:
             f"{baseTopic}/warnings",
             f"{baseTopic}/commands"
         }
+        
         if loggingActive and msg.topic in logTopics:
-            logger.info("====================[SUB]====================")
-            logger.info(msg.topic)
-            logger.info(f"Retained?: {msg.retain}")
-            logger.info(f"QoS: {msg.qos}")
-            logger.info("")
-            logger.info(f"Message:")
-            logger.info(msg.payload.decode())
-            logger.info("=============================================")
+            logger.info(dedent(f"""
+                               ====================[SUB]====================
+                               {msg.topic}
+                               Retained?: {msg.retain}
+                               QoS: {msg.qos}
+
+                               Message:
+                               {msg.payload.decode()}
+                               =============================================
+                               """))
 
     client.on_message = on_message
     client.subscribe(topics)
