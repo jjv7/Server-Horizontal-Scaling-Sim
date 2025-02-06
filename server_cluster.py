@@ -18,8 +18,9 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-subscribeTopics = [("<104547242>/commands", 0), ("public/#", 0)]                  # Pub and sub topics need to be separate, or public will be spammed as well
-client_id = f'server-{random.randint(0, 1000)}'                                   # Assign a random ID to the client device
+baseTopic = "<104547242>"
+subscribeTopics = [(f"{baseTopic}/commands", 0), ("public/#", 0)]    # Pub and sub topics need to be separate, or public will be spammed as well
+client_id = f'server-{random.randint(0, 1000)}'                     # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
 password = os.getenv('MQTT_PASSWORD')
 
@@ -102,8 +103,8 @@ def pubAvgVcpuUse(client) -> None:
 
     global isRunning, avgVcpuUtil, serversActive, simMode
 
-    avgTopic = "<104547242>/servers/avg_cpu_util"
-    warningTopic = "<104547242>/warnings"
+    avgTopic = f"{baseTopic}/servers/avg_cpu_util"
+    warningTopic = f"{baseTopic}/warnings"
     lowCount = 0
     highCount = 0
 
@@ -155,7 +156,7 @@ def pubAvgVcpuUse(client) -> None:
 def pubServersActive(client) -> None:
     """Publishes the active servers"""
     global isRunning, serversActive
-    topic = "<104547242>/servers/active"
+    topic = f"{baseTopic}/servers/active"
 
     while isRunning:
         msg = f"Active servers: {serversActive}"
@@ -217,7 +218,7 @@ def subscribe(client: mqtt_client) -> None:
                      =============================================
                      """))
 
-        if msg.topic == "<104547242>/commands":
+        if msg.topic == f"{baseTopic}/commands":
             cmdActions = {
                 "!scalein": handleScaleIn,
                 "!scaleout": handleScaleOut,
