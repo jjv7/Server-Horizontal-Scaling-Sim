@@ -77,6 +77,7 @@ def disconnect_mqtt(client: mqtt_client) -> None:
 
 
 def pubMsg(client: mqtt_client, topic: str, msg: str) -> None:
+    """Publishes a message to a specified topic"""
     result = client.publish(topic, msg)
     status = result[0]
 
@@ -163,30 +164,34 @@ def pubServersActive(client):
         time.sleep(5)
 
 
-def handleScaleIn():
+def handleScaleIn() -> None:
+    """Handles scaling in by decreasing the number of active servers."""
     global avgVcpuUtil, serversActive
 
-    # We want to have at least 1 server running, having 0 or less isn't realistic
+    # Ensure at least 1 server is running
     if serversActive > 1:
         oldServersActive = serversActive
         serversActive -= 1
 
-        # Increase the average utilisation proportionally as fewer vCPUs handle the same workload
+        # Increase the average utilisation proportionally
+        # This assumes that the workload stays constant
         avgVcpuUtil = int(avgVcpuUtil * (oldServersActive / serversActive))
         
         # Make sure utilisation stays within bounds of 0-100%
         avgVcpuUtil = max(0, min(avgVcpuUtil, 100))
 
 
-def handleScaleOut():
+def handleScaleOut() -> None:
+    """Handles scaling out by increasing the number of active servers."""
     global avgVcpuUtil, serversActive
     
     oldServersActive = serversActive
     serversActive += 2                          # Add on two servers, since 1 isn't enough for a big difference
 
-    if serversActive > 8: serversActive = 8     # Keep the servers capped at 8
+    if serversActive > 8: serversActive = 8     # Cap number of servers at 8
 
-    # Decrease the average utilisation proportionally as more servers handle the same workload
+    # Decrease the average utilisation proportionally
+    # This assumes that the workload stays constant
     avgVcpuUtil = int(avgVcpuUtil * (oldServersActive / serversActive))
     
     # Make sure utilisation stays within bounds of 0-100%
