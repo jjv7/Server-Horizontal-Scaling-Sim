@@ -12,12 +12,13 @@ import threading
 #             https://www.w3schools.com/python/python_classes.asp
 #             https://www.geeksforgeeks.org/python-tkinter-messagebox-widget/
 
-# YOU DON'T HAVE TO DO THE FOLLOWING IF YOU HAVE THE .env PROVIDED BY ME
-# If monitoring the example application copy the following topics into the fields:
-# sub -> public/#,<104547242>/servers/avg_cpu_util,<104547242>/servers/active,<104547242>/warnings
-# pub -> <104547242>/commands
+
+# If monitoring the example application copy the following into the .env file:
+# sub -> public/#,simulation/servers/avg_cpu_util,simulation/servers/active,simulation/warnings
+# pub -> simulation/commands
 
 # You will then need to press the subscribe button to be subscribed to the sub topics
+
 
 # Check if a .env file is present
 useEnvVariables = False
@@ -293,7 +294,7 @@ class MqttClientGui(tk.Tk):
         messagebox.showinfo("Handling warning", f"Sending `{command}` in response to `{message}`")
 
     def processWarning(self, msg):
-        topic = "<104547242>/commands"
+        topic = "simulation/commands"
         warning = msg.payload.decode()
         command = ""
         message = ""
@@ -388,7 +389,7 @@ class MqttClientGui(tk.Tk):
             self.messagesDisplay.config(state=tk.DISABLED)    # Disable text input
 
             # Automatically respond to warnings
-            if msg.topic == "<104547242>/warnings" and not self.handlingWarning:
+            if msg.topic == "simulation/warnings" and not self.handlingWarning:
                 warningProcess = threading.Thread(target = self.processWarning, args = (msg,))
                 warningProcess.start()
 

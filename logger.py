@@ -17,7 +17,7 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-baseTopic = "<104547242>"
+baseTopic = "simulation"
 topics = [
     (f"{baseTopic}/servers/avg_cpu_util", 0),
     (f"{baseTopic}/servers/active", 0),

@@ -18,7 +18,7 @@ load_dotenv()
 # Connection info
 broker = os.getenv('BROKER')
 port = 1883
-baseTopic = "<104547242>"
+baseTopic = "simulation"
 subscribeTopics = [(f"{baseTopic}/commands", 0), ("public/#", 0)]    # Pub and sub topics need to be separate, or public will be spammed as well
 client_id = f'server-{random.randint(0, 1000)}'                     # Assign a random ID to the client device
 username = os.getenv('MQTT_USERNAME')
