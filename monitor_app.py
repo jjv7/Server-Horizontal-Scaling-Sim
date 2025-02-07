@@ -29,13 +29,13 @@ if find_dotenv():
 
 
 class MqttClientGui(tk.Tk):
-    def __init__(self):
-        super().__init__()
+    def __init__(self) -> None:
+        super().__init__()                    # Allows the class to make use of Tkinter methods
         
         # Initialise window
         self.geometry("585x450")
         self.title("MQTT Python GUI Client")
-        self.resizable(False, False)          # Keep window size fixed, so I don't have to do reactive windows
+        self.resizable(False, False)          # Keep window size fixed
 
         # Connection info. These will act essentially as global variables within the class
         self.publishTopics = []
@@ -43,83 +43,83 @@ class MqttClientGui(tk.Tk):
         self.connected = False
         self.handlingWarning = False
 
-        # Create tabs for different sections of the client
-        self.createTabs()
+        # Setup UI
+        self.setupUi()
 
 
-    def createTabs(self):
+    def setupUi(self) -> None:
         # Create notebook container to hold tabs
         tabBar = ttk.Notebook(self)
-        tabBar.pack(expand = True, fill = "both")
+        tabBar.pack(expand=True, fill="both")
         
         # Create tabs
         connectionTab = ttk.Frame(tabBar)
         messageTab = ttk.Frame(tabBar)
 
         # Add tabs to the notebook container
-        tabBar.add(connectionTab, text = "Connection")
-        tabBar.add(messageTab, text = "Messages")
+        tabBar.add(connectionTab, text="Connection")
+        tabBar.add(messageTab, text="Messages")
 
-        # Create the UI for each of the tabs
+        # Initialise the UI in each of the tabs
         self.initConnectionTab(connectionTab)
         self.initMessageTab(messageTab)
 
 
-    def initConnectionTab(self, connectionTab):
-        # Title of connection tab
-        tabTitle = ttk.Label(connectionTab, text = "MQTT Broker Connection Settings", font = "Calibri, 18 bold")
-        tabTitle.grid(row = 0, column = 0, columnspan = 2, padx = 10, pady = 10, sticky = tk.W)
+    def initConnectionTab(self, connectionTab) -> None:
+        # Title
+        tabTitle = ttk.Label(connectionTab, text="MQTT Broker Connection Settings", font="Calibri, 18 bold")
+        tabTitle.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
         
-        # Add in host field
-        hostFrame = ttk.LabelFrame(connectionTab, text = "Host", padding = (10, 10))
-        hostFrame.grid(row = 1, column = 0, padx = 10, pady = 10, sticky = tk.W)
+        # Host field
+        hostFrame = ttk.LabelFrame(connectionTab, text="Host", padding=(10, 10))
+        hostFrame.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
         
-        hostLabel = ttk.Label(hostFrame, text = "mqtt://")
-        hostLabel.grid(row = 0, column = 0, padx = (2, 3), pady = (0, 7))
+        hostLabel = ttk.Label(hostFrame, text="mqtt://")
+        hostLabel.grid(row=0, column=0, padx=(2, 3), pady=(0, 7))
         
-        self.hostEntry = ttk.Entry(hostFrame, width = 22)
-        self.hostEntry.grid(row = 0, column = 1, pady = (0, 7), sticky = tk.W)
+        self.hostEntry = ttk.Entry(hostFrame, width=22)
+        self.hostEntry.grid(row=0, column=1, pady=(0, 7), sticky=tk.W)
 
 
-        # Add in port field
-        portFrame = ttk.LabelFrame(connectionTab, text = "Port", padding = (10, 10))
-        portFrame.grid(row = 2, column = 0, padx = 10, pady = 10, sticky = tk.W)
+        # Port field
+        portFrame = ttk.LabelFrame(connectionTab, text="Port", padding=(10, 10))
+        portFrame.grid(row=2, column=0, padx=10, pady=10, sticky=tk.W)
         
-        self.portEntry = ttk.Entry(portFrame, width = 30)
-        self.portEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
-        self.portEntry.insert(0, 1883)  # Default MQTT port will be automatically input into the field
+        self.portEntry = ttk.Entry(portFrame, width=30)
+        self.portEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
+        self.portEntry.insert(0, 1883)                                      # Default MQTT port will be automatically input into the field
 
 
-        # Add in username field
-        usernameFrame = ttk.LabelFrame(connectionTab, text = "Username", padding = (10, 10))
-        usernameFrame.grid(row = 3, column = 0, padx = 10, pady = 10, sticky = tk.W)
+        # Username field
+        usernameFrame = ttk.LabelFrame(connectionTab, text="Username", padding=(10, 10))
+        usernameFrame.grid(row=3, column=0, padx=10, pady=10, sticky=tk.W)
                 
-        self.usernameEntry = ttk.Entry(usernameFrame, width = 30)
-        self.usernameEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
+        self.usernameEntry = ttk.Entry(usernameFrame, width=30)
+        self.usernameEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
 
 
-        # Add in password field
-        passwordFrame = ttk.LabelFrame(connectionTab, text = "Password", padding = (10, 10))
-        passwordFrame.grid(row = 4, column = 0, padx = 10, pady = 10, sticky = tk.W)
+        # Password field
+        passwordFrame = ttk.LabelFrame(connectionTab, text="Password", padding=(10, 10))
+        passwordFrame.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
                 
-        self.passwordEntry = ttk.Entry(passwordFrame, width = 30, show = "*")               # show = "*" hides the password
-        self.passwordEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
+        self.passwordEntry = ttk.Entry(passwordFrame, width=30, show="*")
+        self.passwordEntry.grid(row=0, column=0, pady=(0, 7), sticky=tk.W)
 
 
-        # Add in connection status section
-        connStatFrame = ttk.LabelFrame(connectionTab, text = "Connection Status", padding = (10, 10))
-        connStatFrame.grid(row = 2, column = 1, columnspan = 2, padx = 30, pady = 10)
+        # Connection status section
+        connStatFrame = ttk.LabelFrame(connectionTab, text="Connection Status", padding=(10, 10))
+        connStatFrame.grid(row=2, column=1, columnspan=2, padx=30, pady=10)
 
-        self.connStatLabel = ttk.Label(connStatFrame, text = "Not Connected", font = "Calibri, 11 bold", background = "gray64", foreground = "red", width = 30, anchor = tk.CENTER)
-        self.connStatLabel.grid(row = 0, column = 0, padx = 5, pady = 5)
+        self.connStatLabel = ttk.Label(connStatFrame, text="Not Connected", font="Calibri, 11 bold", background="gray64", foreground="red", width=30, anchor=tk.CENTER)
+        self.connStatLabel.grid(row=0, column=0, padx=5, pady=5)
 
-        # Add connect button to trigger .connect_mqtt()
-        connButton = ttk.Button(connectionTab, text = "Connect", command = self.connect_mqtt)
-        connButton.grid(row = 3, column = 1, padx = (0, 30), pady = 10, sticky = tk.N + tk.E)
+        # Connect button
+        connButton = ttk.Button(connectionTab, text="Connect", command=self.connect_mqtt)
+        connButton.grid(row=3, column=1, padx=(0, 30), pady=10, sticky=tk.N + tk.E)
 
-        # Add disconnect button to trigger .disconnect_mqtt()
-        disconnButton = ttk.Button(connectionTab, text = "Disconnect", command = self.disconnect_mqtt)
-        disconnButton.grid(row = 3, column = 2, pady = 10, sticky = tk.N + tk.W)
+        # Disconnect button
+        disconnButton = ttk.Button(connectionTab, text="Disconnect", command=self.disconnect_mqtt)
+        disconnButton.grid(row=3, column=2, pady=10, sticky=tk.N + tk.W)
 
 
         # Add in preset entries into fields according to the .env file
@@ -130,70 +130,68 @@ class MqttClientGui(tk.Tk):
 
 
     def initMessageTab(self, messageTab):
-        # Title of message tab
-        tabTitle = ttk.Label(messageTab, text = "Messages", font = "Calibri, 18 bold")
-        tabTitle.grid(row = 0, column = 0, padx = 10, pady = 10, sticky = tk.W)
+        # Title
+        tabTitle = ttk.Label(messageTab, text="Messages", font="Calibri, 18 bold")
+        tabTitle.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
 
 
-        # Create subscribe section
-        subFrame = ttk.LabelFrame(messageTab, text = "Subscribe", padding = (10, 10))
-        subFrame.grid(row = 1, column = 0, padx = 10, pady = 10, sticky = tk.W)
+        # Subscribe section
+        subFrame = ttk.LabelFrame(messageTab, text="Subscribe", padding=(10, 10))
+        subFrame.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
 
-        # Create sub topics field
-        subTopicsLabel = ttk.Label(subFrame, text = "Topics:")
-        subTopicsLabel.grid(row = 0, column = 0, sticky = tk.W)
+        # Sub topics field
+        subTopicsLabel = ttk.Label(subFrame, text="Topics:")
+        subTopicsLabel.grid(row=0, column=0, sticky=tk.W)
 
         self.subTopicsEntry = ttk.Entry(subFrame)
-        self.subTopicsEntry.grid(row = 0, column = 1, padx = (22, 0), pady = 10, sticky = tk.W)
+        self.subTopicsEntry.grid(row=0, column=1, padx=(22, 0), pady=10, sticky=tk.W)
 
-        # Button to trigger .subscribe()
-        subButton = ttk.Button(subFrame, text = "Subscribe", command = self.subscribe)
-        subButton.grid(row = 1, column = 0, columnspan = 2, pady = 10)
+        # Sub button
+        subButton = ttk.Button(subFrame, text="Subscribe", command=self.subscribe)
+        subButton.grid(row=1, column=0, columnspan=2, pady=10)
         
 
-        # Create publish section
-        pubFrame = ttk.LabelFrame(messageTab, text = "Publish", padding = (10, 10))
-        pubFrame.grid(row = 2, column = 0, padx = 10, pady = 10, sticky = tk.W + tk.N)
+        # Publish section
+        pubFrame = ttk.LabelFrame(messageTab, text="Publish", padding=(10, 10))
+        pubFrame.grid(row=2, column=0, padx=10, pady=10, sticky=tk.W + tk.N)
 
-        # Create pub topics field
-        pubTopicsLabel = ttk.Label(pubFrame, text = "Topics:")
-        pubTopicsLabel.grid(row = 0, column = 0, sticky = tk.W + tk.N)
+        # Pub topics field
+        pubTopicsLabel = ttk.Label(pubFrame, text="Topics:")
+        pubTopicsLabel.grid(row=0, column=0, sticky=tk.W + tk.N)
 
         self.pubTopicsEntry = ttk.Entry(pubFrame)
-        self.pubTopicsEntry.grid(row = 0, column = 1, padx = (10, 0), pady = (0, 10), sticky = tk.W)
+        self.pubTopicsEntry.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky=tk.W)
 
         # Message field
-        pubMessageLabel = ttk.Label(pubFrame, text = "Message:")
-        pubMessageLabel.grid(row = 1, column = 0, sticky = tk.W)
+        pubMessageLabel = ttk.Label(pubFrame, text="Message:")
+        pubMessageLabel.grid(row=1, column=0, sticky=tk.W)
 
         self.pubMessageEntry = ttk.Entry(pubFrame)
-        self.pubMessageEntry.grid(row = 1, column = 1, padx = (10, 0), pady = 10, sticky = tk.W)
+        self.pubMessageEntry.grid(row=1, column=1, padx=(10, 0), pady=10, sticky=tk.W)
 
-        # Button to trigger .publish()
-        pubButton = ttk.Button(pubFrame, text = "Publish", command = self.publish)
-        pubButton.grid(row = 2, column = 0, columnspan = 2, pady = 10)
+        # Pub button
+        pubButton = ttk.Button(pubFrame, text="Publish", command=self.publish)
+        pubButton.grid(row=2, column=0, columnspan=2, pady=10)
 
 
-        # Create messages box to display received messages
-        messagesFrame = ttk.LabelFrame(messageTab, text = "Received Messages", padding = (0, 10))
-        messagesFrame.grid(row = 1, column = 1, rowspan = 2, padx = (10, 0), pady = 10, sticky = tk.W)
-
-        # Scrollbar for easy scrolling in the messages box
+        # Message box
+        messagesFrame = ttk.LabelFrame(messageTab, text="Received Messages", padding=(0, 10))
+        messagesFrame.grid(row=1, column=1, rowspan=2, padx=(10, 0), pady=10, sticky=tk.W)
         scrollbar = tk.Scrollbar(messagesFrame)
-        scrollbar.grid(row = 0, column = 1, sticky = tk.NSEW)
+        scrollbar.grid(row=0, column=1, sticky=tk.NSEW)
 
         self.messagesDisplay = tk.Text(
-            messagesFrame, 
-            height = 20, 
-            width = 42, 
-            font = "Consolas, 9", 
-            background = "black", 
-            foreground = "white", 
-            insertbackground = "white",
-            yscrollcommand = scrollbar.set
+            messagesFrame,
+            height=20,
+            width=42,
+            font="Consolas, 9",
+            background="black", 
+            foreground="white",
+            insertbackground="white",
+            yscrollcommand=scrollbar.set
         )
 
-        self.messagesDisplay.grid(row = 0, column = 0, padx = (10, 0))
+        self.messagesDisplay.grid(row=0, column=0, padx=(10, 0))
         self.messagesDisplay.insert(tk.END, "=====================================\n")  # This is to create the top of the first message
         scrollbar.config(command=self.messagesDisplay.yview)                            # Sets the scrollbar to control the y-position in the messages box
         self.messagesDisplay.config(state=tk.DISABLED)                                  # Disable any input into the messages box
