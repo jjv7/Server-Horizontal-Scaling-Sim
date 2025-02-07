@@ -3,6 +3,7 @@ from dotenv import load_dotenv, find_dotenv
 import tkinter as tk
 from tkinter import ttk, messagebox
 from socket import gaierror
+from textwrap import dedent
 import os
 import random
 import time
@@ -27,10 +28,9 @@ if find_dotenv():
     load_dotenv()
 
 
-# Make MqttClientGui a child of Tk
 class MqttClientGui(tk.Tk):
     def __init__(self):
-        super().__init__()                    # Allows the class to make use of Tkinter methods
+        super().__init__()
         
         # Initialise window
         self.geometry("585x450")
@@ -60,7 +60,7 @@ class MqttClientGui(tk.Tk):
         tabBar.add(connectionTab, text = "Connection")
         tabBar.add(messageTab, text = "Messages")
 
-        # Initialise the UI in each of the tabs
+        # Create the UI for each of the tabs
         self.initConnectionTab(connectionTab)
         self.initMessageTab(messageTab)
 
@@ -87,7 +87,7 @@ class MqttClientGui(tk.Tk):
         
         self.portEntry = ttk.Entry(portFrame, width = 30)
         self.portEntry.grid(row = 0, column = 0, pady = (0, 7), sticky = tk.W)
-        self.portEntry.insert(0, 1883)                                      # Default MQTT port will be automatically input into the field
+        self.portEntry.insert(0, 1883)  # Default MQTT port will be automatically input into the field
 
 
         # Add in username field
@@ -370,15 +370,17 @@ class MqttClientGui(tk.Tk):
 
     def subscribe(self):
         def on_message(client, userdata, msg):
-            self.messagesDisplay.config(state=tk.NORMAL)      # Enable text input
-
-            # Display message received in message box
-            self.messagesDisplay.insert(tk.END, f"{msg.topic}")
-            self.messagesDisplay.insert(tk.END, f"\nQoS: {msg.qos}")
-            self.messagesDisplay.insert(tk.END, f"\nRetained?: {msg.retain}")
-            self.messagesDisplay.insert(tk.END, f"\n\nMessage:\n")
-            self.messagesDisplay.insert(tk.END, msg.payload.decode())
-            self.messagesDisplay.insert(tk.END, "\n=====================================\n")
+            # Enable text input and display message
+            self.messagesDisplay.config(state=tk.NORMAL)
+            self.messagesDisplay.insert(tk.END, dedent(f"""\
+                                                       {msg.topic}
+                                                       QoS: {msg.qos}
+                                                       Retained?: {msg.retain}
+                                                       
+                                                       Message:
+                                                       {msg.payload.decode()}
+                                                       =====================================
+                                                       """))
             
             # This is for automatic scrolling of the textbox if the user is at the bottom
             # Range is because the values for yview are inconsistent
