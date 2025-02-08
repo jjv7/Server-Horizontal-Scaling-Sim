@@ -39,6 +39,8 @@ if not username or not password:
 avgVcpuUtil = 10
 serversActive = 1
 
+isConn = threading.Event()
+
 # This is to kill the threads when a keyboard interrupt is used
 isRunning = True
 
@@ -57,6 +59,7 @@ def connect_mqtt() -> mqtt_client:
         """Callback when connected to the broker."""
         if rc == 0: 
             print("Connected to MQTT Broker!")
+            isConn.set()
             subscribe(client)
         else:
             print(f"Failed to connect. Reason code: {rc}")            
@@ -113,6 +116,8 @@ def pubAvgVcpuUse(client) -> None:
 
     global isRunning, avgVcpuUtil, serversActive, simMode
 
+    isConn.wait()
+
     avgTopic = f"{baseTopic}/servers/avg_cpu_util"
     warningTopic = f"{baseTopic}/warnings"
     lowCount = 0
@@ -165,7 +170,11 @@ def pubAvgVcpuUse(client) -> None:
 
 def pubServersActive(client) -> None:
     """Publishes the active servers"""
+    
     global isRunning, serversActive
+
+    isConn.wait()
+
     topic = f"{baseTopic}/servers/active"
 
     while isRunning:
