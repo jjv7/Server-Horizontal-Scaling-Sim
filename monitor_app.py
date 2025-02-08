@@ -146,6 +146,9 @@ class MqttClientGui(tk.Tk):
         self.subTopicsEntry = ttk.Entry(subFrame)
         self.subTopicsEntry.grid(row=0, column=1, padx=(22, 0), pady=10, sticky=tk.W)
 
+        # You will still need to press the subscribe button to subscribe to these topics
+        self.subTopicsEntry.insert(0, "public/#,simulation/servers/avg_cpu_util,simulation/servers/active,simulation/warnings,simulation/commands")
+
         # Sub button
         subButton = ttk.Button(subFrame, text="Subscribe", command=self.subscribe)
         subButton.grid(row=1, column=0, columnspan=2, pady=10)
@@ -161,6 +164,8 @@ class MqttClientGui(tk.Tk):
 
         self.pubTopicsEntry = ttk.Entry(pubFrame)
         self.pubTopicsEntry.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky=tk.W)
+
+        self.pubTopicsEntry.insert(0, "simulation/commands")
 
         # Message field
         pubMessageLabel = ttk.Label(pubFrame, text="Message:")
@@ -195,13 +200,6 @@ class MqttClientGui(tk.Tk):
         self.messagesDisplay.insert(tk.END, "=====================================\n")  # This is to create the top of the first message
         scrollbar.config(command=self.messagesDisplay.yview)                            # Sets the scrollbar to control the y-position in the messages box
         self.messagesDisplay.config(state=tk.DISABLED)                                  # Disable any input into the messages box
-
-        
-        # Add in preset topics into fields according to the .env file
-        # You will still need to press the subscribe button to subscribe to the topics
-        if useEnvVariables:
-            self.subTopicsEntry.insert(0, os.getenv('SUB_TOPICS'))
-            self.pubTopicsEntry.insert(0, os.getenv('PUB_TOPICS'))
 
 
     def disconnect_mqtt(self):
