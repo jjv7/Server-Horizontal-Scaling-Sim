@@ -39,6 +39,7 @@ if not username or not password:
 avgVcpuUtil = 10
 serversActive = 1
 
+# Without this flag, publishing will occur before the connection is fully established
 isConn = threading.Event()
 
 # This is to kill the threads when a keyboard interrupt is used
