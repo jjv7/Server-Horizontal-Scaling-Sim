@@ -65,7 +65,7 @@ class MqttClientGui(tk.Tk):
         self.initMessageTab(messageTab)
 
 
-    def initConnectionTab(self, connectionTab) -> None:
+    def initConnectionTab(self, connectionTab: ttk.Frame) -> None:
         # Title
         tabTitle = ttk.Label(connectionTab, text="MQTT Broker Connection Settings", font="Calibri, 18 bold")
         tabTitle.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
@@ -129,7 +129,7 @@ class MqttClientGui(tk.Tk):
             self.passwordEntry.insert(0, os.getenv('MQTT_PASSWORD'))
 
 
-    def initMessageTab(self, messageTab) -> None:
+    def initMessageTab(self, messageTab: ttk.Frame) -> None:
         # Title
         tabTitle = ttk.Label(messageTab, text="Messages", font="Calibri, 18 bold")
         tabTitle.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
@@ -374,30 +374,30 @@ class MqttClientGui(tk.Tk):
 
     def subscribe(self):
         def on_message(client, userdata, msg):
-            # Enable text input and display message
-            self.messagesDisplay.config(state=tk.NORMAL)
-            self.messagesDisplay.insert(tk.END, dedent(f"""\
-                                                       {msg.topic}
-                                                       QoS: {msg.qos}
-                                                       Retained?: {msg.retain}
-                                                       
-                                                       Message:
-                                                       {msg.payload.decode()}
-                                                       =====================================
-                                                       """))
-            
-            # This is for automatic scrolling of the textbox if the user is at the bottom
-            # Range is because the values for yview are inconsistent
-            # This isn't a perfect solution, since you will just snap back if you don't scroll up far enough
-            if self.messagesDisplay.yview()[1] < 1.0 and self.messagesDisplay.yview()[1] >= 0.8:
-                self.messagesDisplay.yview(tk.END)
+            def updateMsgBox():
+                # Enable text input and display message
+                self.messagesDisplay.config(state=tk.NORMAL)
+                self.messagesDisplay.insert(tk.END, dedent(f"""\
+                    {msg.topic}
+                    QoS: {msg.qos}
+                    Retained?: {msg.retain}
+                    
+                    Message:
+                    {msg.payload.decode()}
+                    =====================================
+                    """))
+                # This is for auto-scrolling of the message box if the user is at the bottom
+                # Range is because the values for yview are inconsistent
+                # Not a perfect solution, it just snaps back if you don't scroll up enough
+                if self.messagesDisplay.yview()[1] < 1.0 and self.messagesDisplay.yview()[1] >= 0.8:
+                    self.messagesDisplay.yview(tk.END)
+                self.messagesDisplay.config(state=tk.DISABLED)    # Disable text input
 
-            self.messagesDisplay.config(state=tk.DISABLED)    # Disable text input
+            self.after(0, updateMsgBox)
 
-            # Automatically respond to warnings
+            # Automatically process warnings
             if msg.topic == "simulation/warnings" and not self.handlingWarning:
-                warningProcess = threading.Thread(target = self.processWarning, args = (msg,))
-                warningProcess.start()
+                threading.Thread(target=self.processWarning, args=(msg,)).start()
 
         # Make sure connection is established before subscribing
         if not self.isConnected:
@@ -405,7 +405,8 @@ class MqttClientGui(tk.Tk):
             return
         
         # Make sure topics field isn't empty
-        if not self.subTopicsEntry.get():
+        topics = [topic.strip() for topic in self.subTopicsEntry.get().split(",")]
+        if not topics or (len(topics) == 1 and topics[0] == ''):
             messagebox.showerror("Error", "Please input a topic to subscribe to")
             return
         
@@ -414,14 +415,9 @@ class MqttClientGui(tk.Tk):
             self.client.unsubscribe([topic[0] for topic in self.subscribeTopics])
 
         # Clear old subscriptions array and add in new subscriptions
-        self.subscribeTopics = []
-        for topic in [subTopic.strip() for subTopic in self.subTopicsEntry.get().split(",")]:   # This also accepts CSVs
-            self.subscribeTopics.append((topic, 0))                                             # To subscribe to multiple topics, we need to also set the QoS (0)
-        
+        self.subscribeTopics = [(topic, 0) for topic in topics]        
         self.client.subscribe(self.subscribeTopics)
         self.client.on_message = on_message
-
-        # Show all topics subscribed
         messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
 
 
