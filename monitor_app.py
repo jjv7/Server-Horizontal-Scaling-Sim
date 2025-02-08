@@ -30,17 +30,17 @@ if find_dotenv():
 
 class MqttClientGui(tk.Tk):
     def __init__(self) -> None:
-        super().__init__()                    # Allows the class to make use of Tkinter methods
+        super().__init__()
         
         # Initialise window
         self.geometry("585x450")
         self.title("MQTT Python GUI Client")
-        self.resizable(False, False)          # Keep window size fixed
+        self.resizable(False, False)    # Keep window size fixed
 
         # Connection info. These will act essentially as global variables within the class
         self.publishTopics = []
         self.subscribeTopics = []
-        self.connected = False
+        self.isConnected = False
         self.handlingWarning = False
 
         # Setup UI
@@ -129,7 +129,7 @@ class MqttClientGui(tk.Tk):
             self.passwordEntry.insert(0, os.getenv('MQTT_PASSWORD'))
 
 
-    def initMessageTab(self, messageTab):
+    def initMessageTab(self, messageTab) -> None:
         # Title
         tabTitle = ttk.Label(messageTab, text="Messages", font="Calibri, 18 bold")
         tabTitle.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
@@ -202,92 +202,100 @@ class MqttClientGui(tk.Tk):
         self.messagesDisplay.config(state=tk.DISABLED)                                  # Disable any input into the messages box
 
 
-    def disconnect_mqtt(self):
-        def on_disconnect(client, userdata, flags, rc, properties):
-            self.connected = False
-
-            # Create notification windows showing the disconnection status
-            if rc == 0:
-                messagebox.showinfo("Disconnection successful", "Successfully disconnected from MQTT Broker")
-            else:
-                messagebox.showerror("Disconnection with error", f"Disconnected with an error. Reason code: {rc}\n")
-            
-            # Change connection status to display not connected
-            self.connStatLabel.config(text="Not Connected", foreground="red")
-
-        self.client.on_disconnect = on_disconnect
-
-        # Only attempt disconnecting if client is already connected, or errors happen
-        if self.connected:
-            self.client.disconnect()
+    def getConnData(self) -> dict[str, str]:
+        """Returns a dictionary of the connection parameters entered by the user"""
+        return {
+            "broker": self.hostEntry.get(),
+            "port": self.portEntry.get(),
+            "username": self.usernameEntry.get(),
+            "password": self.passwordEntry.get()
+        }
 
 
-    def connect_mqtt(self):
+    def connect_mqtt(self) -> None:
+        """Connects client to the MQTT broker."""
         def on_connect(client, userdata, flags, rc, properties):
-            # No actual connection logic here
-            # This is mainly for providing info about the status of a new connection
-
-            #  Create notification windows showing the connection status
+            """Callback when connected to the broker."""
             if rc == 0:
-                self.connected = True
-                messagebox.showinfo("Connection successful", "Connected to MQTT Broker!")
-                self.connStatLabel.config(text="Connected", foreground="green")     # Change connection status to display connected
+                self.isConnected = True
+                self.connStatLabel.config(text="Connected", foreground="green")
+                self.after(0, lambda: messagebox.showinfo("Connection successful", "Connected to MQTT Broker!"))
             else:
-                self.connected = False                                              # Ensure connected is False in case the first connection was successful
-                messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason: {rc}\n")
-                self.connStatLabel.config(text="Not Connected", foreground="red")   # Change connection status to display not connected just in case
-                self.client.loop_stop()                                             # If this is not here, with the wrong authentication details it will keep trying the connection
-        
-        # Don't try connecting again if already connected
-        if self.connected:
+                self.isConnected = False  # Ensure connected is False in case the first connection was successful
+                self.connStatLabel.config(text="Not Connected", foreground="red")
+                self.client.loop_stop() # If this is not here, with the wrong authentication details it will keep retrying the connection
+                self.after(0, lambda: messagebox.showerror("Connection unsuccessful", f"Failed to connect. Reason code: {rc}\n"))
+
+        # Exit if already connected
+        if self.isConnected:
             messagebox.showwarning("Connection active", "Please close the current connection before connecting again")
             return
+        
+        # Retrieve connection info
+        connData = self.getConnData()
+        broker = connData["broker"]
+        port = connData["port"]
+        username = connData["username"]
+        password = connData["password"]
 
-        # Get inputs from broker and port fields
-        broker = self.hostEntry.get()
-        port = self.portEntry.get()
-
-        # Check broker and port fields aren't empty
-        if not broker and not port:
-            messagebox.showerror("Input Error", "Please input a host and port")
-            return
+        # Validate connection info
         if not broker:
             messagebox.showerror("Input Error", "Please input a host")
             return
-        elif not port:
+        if not port:
             messagebox.showerror("Input Error", "Please input a port")
             return
-
-        # Cast port value obtained to an int
+        
         try:
             port = int(port)
         except ValueError:
             messagebox.showerror("Input Error", "Port must be a valid integer")
             return
 
-        # Validate port is inside range (1 to 65535)
         if not (0 < port < 65536):
             messagebox.showerror("Input Error", "Port must be between 1 and 65535")
             return
-        
-        # Get inputs from username and password fields
-        username = self.usernameEntry.get()
-        password = self.passwordEntry.get()
 
         # Connect client object to MQTT broker
-        self.client = mqtt_client.Client(client_id=f'gui-mqtt-{random.randint(0, 1000)}', callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2)
+        self.client = mqtt_client.Client(
+            client_id=f'gui-mqtt-{random.randint(0, 1000)}',
+            callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2
+        )
         self.client.username_pw_set(username, password)
         self.client.on_connect = on_connect
         
         try:
             self.client.connect(broker, port)
-            self.client.loop_start()            # Start networking threads for the mqtt library
-        except (TimeoutError, ConnectionRefusedError, gaierror) as err:
-            # Display caught connection errors
-            messagebox.showerror("Connection Error", f"Connection error: {err}")
+            self.client.loop_start()
+        except (TimeoutError, ConnectionRefusedError, gaierror) as e:
+            messagebox.showerror("Connection Error", f"Connection error: {e}")
+        except Exception as e:
+            messagebox.showerror("Unexpected Error", f"An unexpected error occurred: {e}")
+
+
+    def disconnect_mqtt(self) -> None:
+        """Disconnects client from the MQTT broker."""
+        def on_disconnect(client, userdata, flags, rc, properties):
+            """Callback when disconnected from the broker."""
+            self.isConnected = False
+
+            if rc == 0:
+                self.after(0, lambda: messagebox.showinfo("Disconnection successful", "Successfully disconnected from MQTT Broker"))
+            else:
+                self.after(0, lambda: messagebox.showerror("Disconnection with error", f"Disconnected with an error. Reason code: {rc}\n"))
+            
+            self.connStatLabel.config(text="Not Connected", foreground="red")
+
+        self.client.on_disconnect = on_disconnect
+
+        # Only attempt disconnecting if client is already connected, or errors happen
+        if self.isConnected:
+            self.client.disconnect()
+
 
     def showWarningHandle(self, command, message):
         messagebox.showinfo("Handling warning", f"Sending `{command}` in response to `{message}`")
+
 
     def processWarning(self, msg):
         topic = "simulation/commands"
@@ -331,7 +339,7 @@ class MqttClientGui(tk.Tk):
 
     def publish(self):
         # Make sure client is connected before trying publishing
-        if not self.connected:
+        if not self.isConnected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
             return
 
@@ -392,7 +400,7 @@ class MqttClientGui(tk.Tk):
                 warningProcess.start()
 
         # Make sure connection is established before subscribing
-        if not self.connected:
+        if not self.isConnected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
             return
         
