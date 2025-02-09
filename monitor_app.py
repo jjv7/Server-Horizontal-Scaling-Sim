@@ -37,13 +37,14 @@ class MqttClientGui(tk.Tk):
         self.title("MQTT Python GUI Client")
         self.resizable(False, False)    # Keep window size fixed
 
-        # Connection info. These will act essentially as global variables within the class
+        # State variables for connections and warnings
         self.publishTopics = []
         self.subscribeTopics = []
         self.isConnected = False
         self.handlingWarning = False
+        self.client = None
+        self.warningLock = threading.Lock()
 
-        # Setup UI
         self.setupUi()
 
 
@@ -214,7 +215,7 @@ class MqttClientGui(tk.Tk):
 
     def connect_mqtt(self) -> None:
         """Connects client to the MQTT broker."""
-        def on_connect(client, userdata, flags, rc, properties):
+        def on_connect(client, userdata, flags, rc, properties) -> None:
             """Callback when connected to the broker."""
             if rc == 0:
                 self.isConnected = True
@@ -293,51 +294,34 @@ class MqttClientGui(tk.Tk):
             self.client.disconnect()
 
 
-    def showWarningHandle(self, command, message):
-        messagebox.showinfo("Handling warning", f"Sending `{command}` in response to `{message}`")
+    def processWarning(self, msg) -> None:
+        with self.warningLock:
+            if self.handlingWarning: return
+            self.handlingWarning = True        
 
-
-    def processWarning(self, msg):
         topic = "simulation/commands"
         warning = msg.payload.decode()
         command = ""
-        message = ""
-
-        # Handle one warning at a time
-        if self.handlingWarning: return
-        self.handlingWarning = True
-
-        # Set command depending on warning
         match warning:
             case "Warning: CPU utilisation low":
                 command = "!scalein"
-                message = "CPU utilisation low"
             case "Warning: CPU utilisation high":
                 command = "!scaleout"
-                message = "CPU utilisation high"
             case _:
-                self.handlingWarning = False
-                return  # A valid warning was not received
+                with self.warningLock:
+                    self.handlingWarning = False
+                return
 
-        # Start a separate thread to show that the warning is being handled
-        # If this isn't here, the warning handling will be blocked until the pop-up is closed
-        warningHandleNotification = threading.Thread(target = self.showWarningHandle, args = (command, message)) 
-        warningHandleNotification.start()
-
-        # Start logging server cluster metrics to keep a history of the alert
-        self.client.publish(topic, "!startlog")
-
-        # Resolve the problem the server cluster is experiencing
-        self.client.publish(topic, command)
-
-        # Keep logging information for 15 seconds
-        # This may not be perfect, another warning may be sent in the time the log is still running
-        time.sleep(10)
+        self.after(0, lambda: messagebox.showinfo("Handling warning", f"Sending `{command}` in response to `{warning}`"))
+        self.client.publish(topic, "!startlog") # Start logging server cluster metrics to keep a history of the alert
+        self.client.publish(topic, command)     # Resolve the problem the server cluster is experiencing
+        time.sleep(10)                          # Keep logging information for 10 seconds
         self.client.publish(topic, "!stoplog")
-        self.handlingWarning = False
+        with self.warningLock:
+            self.handlingWarning = False
 
 
-    def publish(self):
+    def publish(self) -> None:
         # Make sure client is connected before trying publishing
         if not self.isConnected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
@@ -372,9 +356,9 @@ class MqttClientGui(tk.Tk):
                 messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
 
 
-    def subscribe(self):
-        def on_message(client, userdata, msg):
-            def updateMsgBox():
+    def subscribe(self) -> None:
+        def on_message(client, userdata, msg) -> None:
+            def updateMsgBox() -> None:
                 # Enable text input and display message
                 self.messagesDisplay.config(state=tk.NORMAL)
                 self.messagesDisplay.insert(tk.END, dedent(f"""\
@@ -415,7 +399,7 @@ class MqttClientGui(tk.Tk):
             self.client.unsubscribe([topic[0] for topic in self.subscribeTopics])
 
         # Clear old subscriptions array and add in new subscriptions
-        self.subscribeTopics = [(topic, 0) for topic in topics]        
+        self.subscribeTopics = [(topic, 0) for topic in topics]     # If adding in multiple topics, the QoS must also be specified
         self.client.subscribe(self.subscribeTopics)
         self.client.on_message = on_message
         messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
