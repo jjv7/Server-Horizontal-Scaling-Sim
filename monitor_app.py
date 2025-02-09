@@ -43,6 +43,8 @@ class MqttClientGui(tk.Tk):
 
         self.setupUi()
 
+        self.protocol("WM_DELETE_WINDOW", self.onClose)
+
 
     def setupUi(self) -> None:
         # Create notebook container to hold tabs
@@ -390,9 +392,18 @@ class MqttClientGui(tk.Tk):
         self.client.on_message = on_message
         messagebox.showinfo("Subscribed to topic", f"Subscribed to {[topic[0] for topic in self.subscribeTopics]}")
 
+    
+    def onClose(self):
+        if self.isConnected and self.client:
+            try:
+                self.client.disconnect()
+            except Exception as e:
+                print(f"Error during disconnect: {e}")
+        if self.client:
+            self.client.loop_stop()
+        self.destroy()
 
 
 if __name__ == "__main__":
     window = MqttClientGui()
     window.mainloop()
-    window.client.loop_stop()
