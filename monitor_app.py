@@ -13,13 +13,9 @@ import threading
 #             https://www.w3schools.com/python/python_classes.asp
 #             https://www.geeksforgeeks.org/python-tkinter-messagebox-widget/
 
+# You will need to press the subscribe button to be subscribed to the sub topics
 
-# If monitoring the example application copy the following into the .env file:
-# sub -> public/#,simulation/servers/avg_cpu_util,simulation/servers/active,simulation/warnings
-# pub -> simulation/commands
-
-# You will then need to press the subscribe button to be subscribed to the sub topics
-
+baseTopic = "simulation"
 
 # Check if a .env file is present
 useEnvVariables = False
@@ -148,7 +144,7 @@ class MqttClientGui(tk.Tk):
         self.subTopicsEntry.grid(row=0, column=1, padx=(22, 0), pady=10, sticky=tk.W)
 
         # You will still need to press the subscribe button to subscribe to these topics
-        self.subTopicsEntry.insert(0, "public/#,simulation/servers/avg_cpu_util,simulation/servers/active,simulation/warnings,simulation/commands")
+        self.subTopicsEntry.insert(0, f"public/#,{baseTopic}/servers/avg_cpu_util,{baseTopic}/servers/active,{baseTopic}/warnings,{baseTopic}/commands")
 
         # Sub button
         subButton = ttk.Button(subFrame, text="Subscribe", command=self.subscribe)
@@ -166,7 +162,7 @@ class MqttClientGui(tk.Tk):
         self.pubTopicsEntry = ttk.Entry(pubFrame)
         self.pubTopicsEntry.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky=tk.W)
 
-        self.pubTopicsEntry.insert(0, "simulation/commands")
+        self.pubTopicsEntry.insert(0, f"{baseTopic}/commands")
 
         # Message field
         pubMessageLabel = ttk.Label(pubFrame, text="Message:")
@@ -300,7 +296,7 @@ class MqttClientGui(tk.Tk):
             if self.handlingWarning: return
             self.handlingWarning = True        
 
-        topic = "simulation/commands"
+        topic = f"{baseTopic}/commands"
         warning = msg.payload.decode()
         command = ""
         match warning:
@@ -370,7 +366,7 @@ class MqttClientGui(tk.Tk):
             self.after(0, updateMsgBox)
 
             # Automatically process warnings
-            if msg.topic == "simulation/warnings" and not self.handlingWarning:
+            if msg.topic == f"{baseTopic}/warnings" and not self.handlingWarning:
                 threading.Thread(target=self.processWarning, args=(msg,)).start()
 
         # Make sure connection is established before subscribing
