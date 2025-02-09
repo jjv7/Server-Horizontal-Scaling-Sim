@@ -295,6 +295,7 @@ class MqttClientGui(tk.Tk):
 
 
     def processWarning(self, msg) -> None:
+        """Processes the input message as a warning"""
         with self.warningLock:
             if self.handlingWarning: return
             self.handlingWarning = True        
@@ -322,38 +323,27 @@ class MqttClientGui(tk.Tk):
 
 
     def publish(self) -> None:
-        # Make sure client is connected before trying publishing
         if not self.isConnected:
             messagebox.showerror("Error", "Please connect to an MQTT broker first")
             return
 
-        # Obtain publish topics
-        # Accepts CSVs
-        # Strip gets rid of the whitespaces, so ", " is acceptable
-        self.publishTopics = [topic.strip() for topic in self.pubTopicsEntry.get().split(",")]
-        
-        # Check that publish topics aren't empty
-        if len(self.publishTopics) == 1 and self.publishTopics[0] == '':
+        topics = [topic.strip() for topic in self.pubTopicsEntry.get().split(",")]
+        if len(topics) == 1 and topics[0] == '':
             messagebox.showerror("Error", "Please input a topic to publish to")
             return
         
-        msg = self.pubMessageEntry.get()            # Get message from field
-
-        # Make sure message field wasn't empty
+        msg = self.pubMessageEntry.get()
         if not msg:
             messagebox.showerror("Error", "Please input a message to publish")
             return
         
-        # Publish message to all the topics specified
-        for topic in self.publishTopics:
+        for topic in topics:
             result = self.client.publish(topic, msg)
-            
-            # Show status of message sent in notification
             status = result[0]
             if status == 0:
-                messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`")
+                self.after(0, lambda: messagebox.showinfo("Message Published", f"Sent `{msg}` to topic `{topic}`"))
             else:
-                messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`")
+                self.after(0, lambda: messagebox.showinfo("Error", f"Failed to send message to topic `{topic}`"))
 
 
     def subscribe(self) -> None:
