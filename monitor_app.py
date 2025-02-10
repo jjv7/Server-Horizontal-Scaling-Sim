@@ -30,7 +30,7 @@ class MqttClientGui(tk.Tk):
         
         # Initialise window
         self.geometry("585x450")
-        self.title("MQTT Python GUI Client")
+        self.title("Monitor App")
         self.resizable(False, False)    # Keep window size fixed
 
         # State variables for connections and warnings
