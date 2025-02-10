@@ -34,7 +34,6 @@ class MqttClientGui(tk.Tk):
         self.resizable(False, False)    # Keep window size fixed
 
         # State variables for connections and warnings
-        self.publishTopics = []
         self.subscribeTopics = []
         self.isConnected = False
         self.handlingWarning = False
